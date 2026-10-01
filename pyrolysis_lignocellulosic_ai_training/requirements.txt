@@ -1,0 +1,9 @@
+selenium
+webdriver-manager
+pywinauto
+pyautogui
+requests
+beautifulsoup4
+lxml
+scikit-learn
+joblib

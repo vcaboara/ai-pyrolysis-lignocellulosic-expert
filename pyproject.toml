@@ -1,0 +1,34 @@
+[tool.black]
+line-length = 120
+target-version = ["py313"]
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.venv
+  | venv
+  | __pycache__
+  | build
+  | dist
+  | \.mypy_cache
+  | \.ruff_cache
+  | \.pytest_cache
+  | .*/\.rag_index/
+  | .*/repo_corpus/
+)
+'''
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = []
+
+[tool.mypy]
+python_version = "3.13"
+warn_unused_ignores = true
+check_untyped_defs = true
+show_error_codes = true
+ignore_missing_imports = true

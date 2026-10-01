@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+py scripts/privacy_guard.py
+RESULT=$?
+if [ $RESULT -ne 0 ]; then
+  exit $RESULT
+fi
+py run_local_ci.py --tests --privacy
