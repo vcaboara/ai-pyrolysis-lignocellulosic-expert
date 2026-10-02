@@ -38,8 +38,14 @@ def read_jsonl(path: Path) -> list[dict[str, Any]]:
     return rows
 
 
+def _dedupe_signature(source_type: str, source_url: str, title: str, text: str) -> str:
+    normalized_text = " ".join(text.split()).lower()
+    return f"{source_type}|{source_url}|{title}|{normalized_text}"
+
+
 def load_corpora(paths: list[Path]) -> list[ChunkRecord]:
     records: list[ChunkRecord] = []
+    seen_signatures: set[str] = set()
     for p in paths:
         if not p.exists():
             continue
@@ -47,35 +53,59 @@ def load_corpora(paths: list[Path]) -> list[ChunkRecord]:
         corpus_key = p.as_posix().lower()
         if "patent" in corpus_key:
             for r in rows:
+                source_type = "patent"
+                source_url = str(r.get("url", ""))
+                title = str(r.get("title", ""))
+                text = str(r.get("text", ""))
+                signature = _dedupe_signature(source_type, source_url, title, text)
+                if signature in seen_signatures:
+                    continue
+                seen_signatures.add(signature)
                 records.append(
                     ChunkRecord(
                         chunk_id=str(r.get("id", "")),
-                        source_type="patent",
-                        source_url=str(r.get("url", "")),
-                        title=str(r.get("title", "")),
-                        text=str(r.get("text", "")),
+                        source_type=source_type,
+                        source_url=source_url,
+                        title=title,
+                        text=text,
                     )
                 )
         elif "repo" in corpus_key:
             for r in rows:
+                source_type = "repo"
+                source_url = str(r.get("url", ""))
+                title = str(r.get("title", ""))
+                text = str(r.get("text", ""))
+                signature = _dedupe_signature(source_type, source_url, title, text)
+                if signature in seen_signatures:
+                    continue
+                seen_signatures.add(signature)
                 records.append(
                     ChunkRecord(
                         chunk_id=str(r.get("id", "")),
-                        source_type="repo",
-                        source_url=str(r.get("url", "")),
-                        title=str(r.get("title", "")),
-                        text=str(r.get("text", "")),
+                        source_type=source_type,
+                        source_url=source_url,
+                        title=title,
+                        text=text,
                     )
                 )
         else:
             for r in rows:
+                source_type = "external"
+                source_url = str(r.get("url", ""))
+                title = str(r.get("title", ""))
+                text = str(r.get("text", ""))
+                signature = _dedupe_signature(source_type, source_url, title, text)
+                if signature in seen_signatures:
+                    continue
+                seen_signatures.add(signature)
                 records.append(
                     ChunkRecord(
                         chunk_id=str(r.get("id", "")),
-                        source_type="external",
-                        source_url=str(r.get("url", "")),
-                        title=str(r.get("title", "")),
-                        text=str(r.get("text", "")),
+                        source_type=source_type,
+                        source_url=source_url,
+                        title=title,
+                        text=text,
                     )
                 )
     return records

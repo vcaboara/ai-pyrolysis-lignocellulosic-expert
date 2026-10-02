@@ -19,6 +19,54 @@ def normalize_whitespace(text: str) -> str:
     return text.strip()
 
 
+def collapse_repeated_token_spans(text: str, min_span_tokens: int = 10, max_span_tokens: int = 60) -> str:
+    tokens = text.split()
+    if len(tokens) < min_span_tokens * 2:
+        return text
+
+    out: list[str] = []
+    i = 0
+    while i < len(tokens):
+        max_window = min(max_span_tokens, (len(tokens) - i) // 2)
+        repeated = False
+        for window in range(max_window, min_span_tokens - 1, -1):
+            left = tokens[i : i + window]
+            right = tokens[i + window : i + (window * 2)]
+            if left == right:
+                out.extend(left)
+                i += window * 2
+                repeated = True
+                break
+        if not repeated:
+            out.append(tokens[i])
+            i += 1
+
+    return " ".join(out)
+
+
+def dedupe_consecutive_sentences(text: str) -> str:
+    parts = re.split(r"(?<=[.!?])\s+", text)
+    cleaned: list[str] = []
+    prev_norm = ""
+    for part in parts:
+        sentence = normalize_whitespace(part)
+        if not sentence:
+            continue
+        norm = sentence.lower()
+        if norm == prev_norm:
+            continue
+        cleaned.append(sentence)
+        prev_norm = norm
+    return " ".join(cleaned)
+
+
+def clean_patent_text(text: str) -> str:
+    text = normalize_whitespace(text)
+    text = collapse_repeated_token_spans(text)
+    text = dedupe_consecutive_sentences(text)
+    return normalize_whitespace(text)
+
+
 def chunk_text(text: str, max_chars: int = 2200, overlap: int = 220) -> list[str]:
     if len(text) <= max_chars:
         return [text]
@@ -99,9 +147,9 @@ def fetch_patent_detail(session: requests.Session, patent_code: str, timeout: in
         claims_nodes = soup.find_all(["claim-text", "div"], attrs={"num": True})
         claims_text = " ".join(node.get_text(" ", strip=True) for node in claims_nodes[:80])
 
-        full_text = normalize_whitespace(" ".join([title, abstract, claims_text]))
+        full_text = clean_patent_text(" ".join([title, abstract, claims_text]))
         if len(full_text) < 200:
-            full_text = normalize_whitespace(soup.get_text(" ", strip=True))[:50000]
+            full_text = clean_patent_text(soup.get_text(" ", strip=True))[:50000]
 
         return {
             "patent_code": patent_code,
