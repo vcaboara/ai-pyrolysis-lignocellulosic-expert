@@ -1,0 +1,2 @@
+#!/usr/bin/env sh
+py scripts/privacy_guard.py --commit-msg-file "$1"

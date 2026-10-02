@@ -1,0 +1,27 @@
+# Python virtual environments
+venv/
+**/venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# VS Code workspace settings
+.vscode/
+
+# Legacy installer workspace
+vortex_installer/
+
+# Generated local RAG index artifacts
+**/.rag_index/
+
+# Generated repository corpus artifacts
+**/repo_corpus/
+
+# Generated local test artifacts
+help.txt
+
+# Local-only private data and scripts
+.local_private/
+pyrolysis_lignocellulosic_ai_training/private_site_corpus/
+pyrolysis_lignocellulosic_ai_training/private_site_builder.py
