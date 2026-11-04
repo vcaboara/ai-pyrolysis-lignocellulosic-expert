@@ -26,6 +26,27 @@ class ChunkRecord:
     title: str
     text: str
 
+    def __str__(self) -> str:
+        """Return a compact, human-readable summary of the chunk record.
+
+        Returns:
+            A one-line string describing the chunk's identity, source, and title.
+        """
+        snippet = self.text.replace("\n", " ").strip()
+        if len(snippet) > 140:
+            snippet = f"{snippet[:137]}..."
+        return (
+            f"ChunkRecord(chunk_id={self.chunk_id!r}, "
+            f"source_type={self.source_type!r}, "
+            f"source_url={self.source_url!r}, "
+            f"title={self.title!r}, "
+            f"text={snippet!r})"
+        )
+
+    def __repr__(self) -> str:
+        """Return the debugging representation for a ChunkRecord instance."""
+        return self.__str__()
+
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
     """Read a JSONL corpus file into Python dictionaries.
@@ -73,16 +94,20 @@ def _chunk_records_from_rows(rows: list[dict[str, Any]], source_type: str) -> li
     Returns:
         A list of ChunkRecord objects with the source metadata attached.
     """
-    return [
-        ChunkRecord(
-            chunk_id=str(row.get("id", "")),
-            source_type=source_type,
-            source_url=str(row.get("url", "")),
-            title=str(row.get("title", "")),
-            text=str(row.get("text", "")),
+    records: list[ChunkRecord] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        records.append(
+            ChunkRecord(
+                chunk_id=str(row.get("id", "")),
+                source_type=source_type,
+                source_url=str(row.get("url", "")),
+                title=str(row.get("title", "")),
+                text=str(row.get("text", "")),
+            )
         )
-        for row in rows
-    ]
+    return records
 
 
 def load_corpora(paths: list[Path]) -> list[ChunkRecord]:
@@ -117,14 +142,17 @@ def build_index(records: list[ChunkRecord], index_dir: Path) -> None:
     index_dir.mkdir(parents=True, exist_ok=True)
     docs = [f"{r.title}\n{r.text}" for r in records]
 
-    vectorizer = TfidfVectorizer(stop_words="english", ngram_range=(1, 2), min_df=1)
+    vectorizer = TfidfVectorizer(
+        stop_words="english", ngram_range=(1, 2), min_df=1)
     matrix = vectorizer.fit_transform(docs)
 
     joblib.dump(vectorizer, index_dir / "vectorizer.joblib")
     joblib.dump(matrix, index_dir / "matrix.joblib")
 
     serializable = [r.__dict__ for r in records]
-    (index_dir / "records.json").write_text(json.dumps(serializable, indent=2, ensure_ascii=False), encoding="utf-8")
+    (index_dir / "records.json").write_text(json.dumps(serializable,
+                                                       indent=2, ensure_ascii=False),
+                                            encoding="utf-8")
 
 
 def load_index(index_dir: Path) -> tuple[TfidfVectorizer, Any, list[ChunkRecord]]:
@@ -162,13 +190,15 @@ def _rrf(rank: int, k: int = 60) -> float:
 
 def _is_ip_query(query: str) -> bool:
     q = query.lower()
-    needles = ["ip", "patent", "prior art", "novelty", "claim chart", "diligence"]
+    needles = ["ip", "patent", "prior art",
+               "novelty", "claim chart", "diligence"]
     return any(n in q for n in needles)
 
 
 def _is_repo_query(query: str) -> bool:
     q = query.lower()
-    needles = ["repo", "repository", "code", "script", "function", "local_rag", "rebuild index"]
+    needles = ["repo", "repository", "code", "script",
+               "function", "local_rag", "rebuild index"]
     return any(n in q for n in needles)
 
 
@@ -207,10 +237,13 @@ def retrieve(
         keyword_scores[i] = _keyword_overlap_score(query, rec)
 
     cosine_ranked = cosine_scores.argsort()[::-1]
-    keyword_ranked = sorted(range(len(records)), key=lambda i: keyword_scores[i], reverse=True)
+    keyword_ranked = sorted(range(len(records)),
+                            key=lambda i: keyword_scores[i], reverse=True)
 
-    cosine_rank_pos = {idx: pos for pos, idx in enumerate(cosine_ranked, start=1)}
-    keyword_rank_pos = {idx: pos for pos, idx in enumerate(keyword_ranked, start=1)}
+    cosine_rank_pos = {idx: pos for pos,
+                       idx in enumerate(cosine_ranked, start=1)}
+    keyword_rank_pos = {idx: pos for pos,
+                        idx in enumerate(keyword_ranked, start=1)}
 
     merged_scores: list[float] = [0.0] * len(records)
     ip_like_query = _is_ip_query(query) or mode == "feasibility"
@@ -233,7 +266,8 @@ def retrieve(
             + repo_boost
         )
 
-    ranked_idx = sorted(range(len(records)), key=lambda i: merged_scores[i], reverse=True)
+    ranked_idx = sorted(range(len(records)),
+                        key=lambda i: merged_scores[i], reverse=True)
 
     selected: list[int] = []
     seen_urls: set[str] = set()
@@ -250,10 +284,12 @@ def retrieve(
             break
 
     if ip_like_query and top_k >= 4:
-        current_patent = sum(1 for i in selected if records[i].source_type == "patent")
+        current_patent = sum(
+            1 for i in selected if records[i].source_type == "patent")
         min_patent = max(2, top_k // 3)
         if current_patent < min_patent:
-            patent_pool = [idx for idx in ranked_idx if records[idx].source_type == "patent" and idx not in selected]
+            patent_pool = [
+                idx for idx in ranked_idx if records[idx].source_type == "patent" and idx not in selected]
             while patent_pool and current_patent < min_patent and selected:
                 candidate_idx = patent_pool.pop(0)
                 candidate_url = records[candidate_idx].source_url
@@ -272,7 +308,8 @@ def retrieve(
     if len(selected) < top_k:
         fallback_candidates = ranked_idx
         if source_filter != "all":
-            fallback_candidates = [idx for idx in ranked_idx if records[idx].source_type == source_filter]
+            fallback_candidates = [
+                idx for idx in ranked_idx if records[idx].source_type == source_filter]
         for idx in fallback_candidates:
             if idx in selected:
                 continue
@@ -305,9 +342,11 @@ def build_context(hits: list[tuple[float, ChunkRecord]]) -> tuple[str, list[dict
     refs = []
     for i, (_, rec) in enumerate(hits, start=1):
         ref = f"S{i}"
-        refs.append({"ref": ref, "title": rec.title, "url": rec.source_url, "source_type": rec.source_type})
+        refs.append({"ref": ref, "title": rec.title,
+                    "url": rec.source_url, "source_type": rec.source_type})
         snippet = rec.text[:1200].replace("\n", " ").strip()
-        lines.append(f"[{ref}] {rec.title}\nURL: {rec.source_url}\nExcerpt: {snippet}")
+        lines.append(
+            f"[{ref}] {rec.title}\nURL: {rec.source_url}\nExcerpt: {snippet}")
     return "\n\n".join(lines), refs
 
 
@@ -401,7 +440,9 @@ def answer_mode(
     if use_llm:
         llm_text = call_ollama(prompt, model=model)
         if llm_text:
-            cite_block = "\n\nSource map:\n" + "\n".join([f"- [{r['ref']}] {r['title']} ({r['url']})" for r in refs])
+            cite_block = "\n\nSource map:\n" + \
+                "\n".join(
+                    [f"- [{r['ref']}] {r['title']} ({r['url']})" for r in refs])
             return llm_text + cite_block
 
     return fallback_answer(question, refs, hits)
@@ -444,7 +485,9 @@ def feasibility_mode(
     if use_llm:
         llm_text = call_ollama(prompt, model=model)
         if llm_text:
-            cite_block = "\n\nSource map:\n" + "\n".join([f"- [{r['ref']}] {r['title']} ({r['url']})" for r in refs])
+            cite_block = "\n\nSource map:\n" + \
+                "\n".join(
+                    [f"- [{r['ref']}] {r['title']} ({r['url']})" for r in refs])
             return llm_text + cite_block
 
     facts = []
@@ -505,14 +548,21 @@ def parse_args() -> argparse.Namespace:
     Returns:
         An argparse namespace containing all CLI options and values.
     """
-    parser = argparse.ArgumentParser(description="Local RAG for pyrolysis and lignocellulosic expert review.")
-    parser.add_argument("--build-index", action="store_true", help="Build or rebuild the local vector index")
-    parser.add_argument("--index-dir", default=str(DEFAULT_INDEX_DIR), help="Index directory")
-    parser.add_argument("--question", help="Question for answer or feasibility mode")
-    parser.add_argument("--mode", choices=["answer", "feasibility"], default="answer")
+    parser = argparse.ArgumentParser(
+        description="Local RAG for pyrolysis and lignocellulosic expert review.")
+    parser.add_argument("--build-index", action="store_true",
+                        help="Build or rebuild the local vector index")
+    parser.add_argument(
+        "--index-dir", default=str(DEFAULT_INDEX_DIR), help="Index directory")
+    parser.add_argument(
+        "--question", help="Question for answer or feasibility mode")
+    parser.add_argument(
+        "--mode", choices=["answer", "feasibility"], default="answer")
     parser.add_argument("--top-k", type=int, default=8)
-    parser.add_argument("--model", default="llama3.1:8b", help="Ollama model name")
-    parser.add_argument("--no-llm", action="store_true", help="Disable LLM generation and use extractive fallback")
+    parser.add_argument("--model", default="llama3.1:8b",
+                        help="Ollama model name")
+    parser.add_argument("--no-llm", action="store_true",
+                        help="Disable LLM generation and use extractive fallback")
     parser.add_argument(
         "--external-boost",
         type=float,
@@ -557,15 +607,18 @@ def main() -> None:
     if args.build_index:
         records = load_corpora(corpus_paths)
         if not records:
-            raise SystemExit("No corpus records found. Check corpus file paths.")
+            raise SystemExit(
+                "No corpus records found. Check corpus file paths.")
         build_index(records, index_dir)
-        print(f"Index built with {len(records)} chunks at {index_dir.resolve()}")
+        print(
+            f"Index built with {len(records)} chunks at {index_dir.resolve()}")
 
     if args.question:
         if not (index_dir / "vectorizer.joblib").exists():
             records = load_corpora(corpus_paths)
             if not records:
-                raise SystemExit("No corpus records found. Cannot build index.")
+                raise SystemExit(
+                    "No corpus records found. Cannot build index.")
             build_index(records, index_dir)
 
         vectorizer, matrix, records = load_index(index_dir)
@@ -584,9 +637,11 @@ def main() -> None:
 
         use_llm = not args.no_llm
         if args.mode == "answer":
-            output = answer_mode(args.question, context, refs, model=args.model, use_llm=use_llm, hits=hits)
+            output = answer_mode(args.question, context, refs,
+                                 model=args.model, use_llm=use_llm, hits=hits)
         else:
-            output = feasibility_mode(args.question, context, refs, model=args.model, use_llm=use_llm, hits=hits)
+            output = feasibility_mode(
+                args.question, context, refs, model=args.model, use_llm=use_llm, hits=hits)
 
         print(output)
 
