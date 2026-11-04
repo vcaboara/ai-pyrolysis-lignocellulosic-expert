@@ -55,6 +55,7 @@ def load_corpora(paths: list[Path]) -> list[ChunkRecord]:
         corpus_key = p.as_posix().lower()
         if "patent" in corpus_key:
             for r in rows:
+            # TODO: refactor duplicate code into a method
                 source_type = "patent"
                 source_url = str(r.get("url", ""))
                 title = str(r.get("title", ""))
