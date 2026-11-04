@@ -141,6 +141,31 @@ class LocalRagHelperTests(unittest.TestCase):
         self.assertEqual(len({item[1].source_url for item in hits}), len(hits))
         self.assertLessEqual(len(hits), 4)
 
+    def test_retrieve_dedupe_collapses_to_single_hit_when_same_url_repeats(self):
+        records = [
+            ChunkRecord("1", "patent", "https://same-source", "Primary", "Pyrolysis process detail."),
+            ChunkRecord("2", "patent", "https://same-source", "Duplicate", "Same source URL."),
+        ]
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index_dir = Path(tmpdir) / "index"
+            build_index(records, index_dir)
+            vectorizer, matrix, _ = load_index(index_dir)
+            hits = retrieve(
+                query="pyrolysis biomass",
+                vectorizer=vectorizer,
+                matrix=matrix,
+                records=records,
+                top_k=2,
+                external_boost=0.0,
+                dedupe_sources=True,
+                mode="answer",
+                source_filter="patent",
+            )
+
+        self.assertEqual(len(hits), 1)
+        self.assertEqual({item[1].source_url for item in hits}, {"https://same-source"})
+
     def test_build_context_and_answer_fallback_include_citations(self):
         hits = [(0.9, ChunkRecord("1", "patent", "https://a", "Patent title", "A long pyrolysis description."))]
 
