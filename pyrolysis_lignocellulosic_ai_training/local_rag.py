@@ -1,4 +1,5 @@
 import argparse
+import hashlib
 import json
 import re
 from dataclasses import dataclass
@@ -38,9 +39,10 @@ def read_jsonl(path: Path) -> list[dict[str, Any]]:
     return rows
 
 
-def _dedupe_signature(source_type: str, source_url: str, title: str, text: str) -> str:
+def _dedupe_signature(source_type: str, source_url: str, title: str, text: str, max_chars: int = 2048) -> str:
     normalized_text = " ".join(text.split()).lower()
-    return f"{source_type}|{source_url}|{title}|{normalized_text}"
+    digest = hashlib.sha256(normalized_text[:max_chars].encode("utf-8")).hexdigest()
+    return f"{source_type}|{source_url}|{title.lower()}|{digest}"
 
 
 def load_corpora(paths: list[Path]) -> list[ChunkRecord]:

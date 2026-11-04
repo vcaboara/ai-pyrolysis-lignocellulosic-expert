@@ -27,22 +27,32 @@ def collapse_repeated_token_spans(text: str, min_span_tokens: int = 10, max_span
     out: list[str] = []
     i = 0
     while i < len(tokens):
-        max_window = min(max_span_tokens, (len(tokens) - i) // 2)
-        repeated = False
+        best_span: list[str] | None = None
+        best_repeat = 1
+        best_length = 0
+
+        max_window = min(max_span_tokens, len(tokens) - i)
         for window in range(max_window, min_span_tokens - 1, -1):
-            left = tokens[i : i + window]
-            right = tokens[i + window : i + (window * 2)]
-            if left == right:
-                out.extend(left)
-                j = i + window * 2
-                while j + window <= len(tokens) and tokens[j : j + window] == left:
-                    j += window
-                i = j
-                repeated = True
-                break
-        if not repeated:
+            segment = tokens[i : i + window]
+            if not segment:
+                continue
+            repeat_count = 1
+            j = i + window
+            while j + window <= len(tokens) and tokens[j : j + window] == segment:
+                repeat_count += 1
+                j += window
+            if repeat_count >= 2 and (window * repeat_count) > best_length:
+                best_span = segment
+                best_repeat = repeat_count
+                best_length = window * repeat_count
+
+        if best_span is None:
             out.append(tokens[i])
             i += 1
+            continue
+
+        out.extend(best_span)
+        i += len(best_span) * best_repeat
 
     return " ".join(out)
 
@@ -150,9 +160,11 @@ def fetch_patent_detail(session: requests.Session, patent_code: str, timeout: in
         claims_nodes = soup.find_all(["claim-text", "div"], attrs={"num": True})
         claims_text = " ".join(node.get_text(" ", strip=True) for node in claims_nodes[:80])
 
-        full_text = clean_patent_text(" ".join([title, abstract, claims_text]))
+        title_abstract_claims = " ".join(part for part in [title, abstract, claims_text] if part)
+        raw_text = soup.get_text(" ", strip=True)[:50000]
+        full_text = clean_patent_text(title_abstract_claims[:20000])
         if len(full_text) < 200:
-            full_text = clean_patent_text(soup.get_text(" ", strip=True))[:50000]
+            full_text = clean_patent_text(raw_text)
 
         return {
             "patent_code": patent_code,
