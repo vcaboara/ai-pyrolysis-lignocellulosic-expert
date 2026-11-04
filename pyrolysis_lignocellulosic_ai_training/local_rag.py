@@ -28,6 +28,14 @@ class ChunkRecord:
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
+    """Read a JSONL corpus file into Python dictionaries.
+
+    Args:
+        path: File path to a JSONL corpus.
+
+    Returns:
+        A list of parsed JSON objects, one per non-empty line in the file.
+    """
     rows = []
     with path.open("r", encoding="utf-8") as f:
         for line in f:
@@ -38,50 +46,74 @@ def read_jsonl(path: Path) -> list[dict[str, Any]]:
     return rows
 
 
+def _source_type_for_path(path: Path) -> str:
+    """Infer the corpus source family from a file path.
+
+    Args:
+        path: The corpus file path being loaded.
+
+    Returns:
+        One of "patent", "repo", or "external" based on path keywords.
+    """
+    corpus_key = path.as_posix().lower()
+    if "patent" in corpus_key:
+        return "patent"
+    if "repo" in corpus_key:
+        return "repo"
+    return "external"
+
+
+def _chunk_records_from_rows(rows: list[dict[str, Any]], source_type: str) -> list[ChunkRecord]:
+    """Normalize raw JSON rows into ChunkRecord objects.
+
+    Args:
+        rows: Parsed JSON objects from a corpus file.
+        source_type: Category label such as "patent", "repo", or "external".
+
+    Returns:
+        A list of ChunkRecord objects with the source metadata attached.
+    """
+    return [
+        ChunkRecord(
+            chunk_id=str(row.get("id", "")),
+            source_type=source_type,
+            source_url=str(row.get("url", "")),
+            title=str(row.get("title", "")),
+            text=str(row.get("text", "")),
+        )
+        for row in rows
+    ]
+
+
 def load_corpora(paths: list[Path]) -> list[ChunkRecord]:
+    """Load and normalize all available corpus files into one list.
+
+    Args:
+        paths: Corpus file paths to read. Missing files are skipped.
+
+    Returns:
+        A single list of ChunkRecord objects across all loaded corpora.
+    """
     records: list[ChunkRecord] = []
     for p in paths:
         if not p.exists():
             continue
         rows = read_jsonl(p)
-        corpus_key = p.as_posix().lower()
-        if "patent" in corpus_key:
-            for r in rows:
-                records.append(
-                    ChunkRecord(
-                        chunk_id=str(r.get("id", "")),
-                        source_type="patent",
-                        source_url=str(r.get("url", "")),
-                        title=str(r.get("title", "")),
-                        text=str(r.get("text", "")),
-                    )
-                )
-        elif "repo" in corpus_key:
-            for r in rows:
-                records.append(
-                    ChunkRecord(
-                        chunk_id=str(r.get("id", "")),
-                        source_type="repo",
-                        source_url=str(r.get("url", "")),
-                        title=str(r.get("title", "")),
-                        text=str(r.get("text", "")),
-                    )
-                )
-        else:
-            for r in rows:
-                records.append(
-                    ChunkRecord(
-                        chunk_id=str(r.get("id", "")),
-                        source_type="external",
-                        source_url=str(r.get("url", "")),
-                        title=str(r.get("title", "")),
-                        text=str(r.get("text", "")),
-                    )
-                )
+        source_type = _source_type_for_path(p)
+        records.extend(_chunk_records_from_rows(rows, source_type))
     return records
 
 
 def build_index(records: list[ChunkRecord], index_dir: Path) -> None:
+    """Build and persist the TF-IDF search index for a set of records.
+
+    Args:
+        records: Chunk records to include in the index.
+        index_dir: Directory where the index artifacts should be written.
+
+    Returns:
+        None. The built vectorizer, matrix, and source records are saved to disk.
+    """
     index_dir.mkdir(parents=True, exist_ok=True)
     docs = [f"{r.title}\n{r.text}" for r in records]
 
@@ -96,6 +128,14 @@ def build_index(records: list[ChunkRecord], index_dir: Path) -> None:
 
 
 def load_index(index_dir: Path) -> tuple[TfidfVectorizer, Any, list[ChunkRecord]]:
+    """Load the saved TF-IDF index and chunk metadata from disk.
+
+    Args:
+        index_dir: Directory containing the serialized index artifacts.
+
+    Returns:
+        A tuple of (vectorizer, matrix, records) used for retrieval.
+    """
     vectorizer = joblib.load(index_dir / "vectorizer.joblib")
     matrix = joblib.load(index_dir / "matrix.joblib")
     rows = json.loads((index_dir / "records.json").read_text(encoding="utf-8"))
@@ -143,6 +183,22 @@ def retrieve(
     mode: str,
     source_filter: str,
 ) -> list[tuple[float, ChunkRecord]]:
+    """Rank the best matching chunks for a query.
+
+    Args:
+        query: User question or prompt to search against the corpus.
+        vectorizer: Trained TF-IDF vectorizer used for lexical similarity.
+        matrix: TF-IDF document matrix.
+        records: ChunkRecord entries for all indexed corpus documents.
+        top_k: Maximum number of results to return.
+        external_boost: Extra ranking bonus to apply to external-source chunks.
+        dedupe_sources: When true, keep only one result per source URL.
+        mode: Retrieval mode, such as "answer" or "feasibility".
+        source_filter: Optional source type to restrict results to.
+
+    Returns:
+        A list of (score, ChunkRecord) pairs sorted from most relevant to least relevant.
+    """
     qv = vectorizer.transform([query])
     cosine_scores = cosine_similarity(qv, matrix)[0]
 
@@ -183,6 +239,8 @@ def retrieve(
     seen_urls: set[str] = set()
     for idx in ranked_idx:
         rec = records[idx]
+        if source_filter != "all" and rec.source_type != source_filter:
+            continue
         if dedupe_sources and rec.source_url and rec.source_url in seen_urls:
             continue
         selected.append(idx)
@@ -206,7 +264,10 @@ def retrieve(
                 current_patent += 1
 
     if len(selected) < top_k:
-        for idx in ranked_idx:
+        fallback_candidates = ranked_idx
+        if source_filter != "all":
+            fallback_candidates = [idx for idx in ranked_idx if records[idx].source_type == source_filter]
+        for idx in fallback_candidates:
             if idx in selected:
                 continue
             selected.append(idx)
@@ -220,6 +281,15 @@ def retrieve(
 
 
 def build_context(hits: list[tuple[float, ChunkRecord]]) -> tuple[str, list[dict[str, str]]]:
+    """Create a source-rich context block and citation metadata for the retrieved hits.
+
+    Args:
+        hits: Ranked retrieval outputs as (score, ChunkRecord) tuples.
+
+    Returns:
+        A tuple of (context_text, refs), where context_text contains excerpt text and refs
+        contains citation metadata for each source.
+    """
     lines = []
     refs = []
     for i, (_, rec) in enumerate(hits, start=1):
@@ -231,6 +301,16 @@ def build_context(hits: list[tuple[float, ChunkRecord]]) -> tuple[str, list[dict
 
 
 def call_ollama(prompt: str, model: str, timeout_sec: int = 120) -> str | None:
+    """Send a prompt to the local Ollama server and return its text response.
+
+    Args:
+        prompt: Prompt text to send to the local model.
+        model: Ollama model name to use.
+        timeout_sec: HTTP timeout for the request.
+
+    Returns:
+        The generated text from Ollama, or None if the request fails or the model is unavailable.
+    """
     url = "http://localhost:11434/api/generate"
     payload = {
         "model": model,
@@ -249,6 +329,16 @@ def call_ollama(prompt: str, model: str, timeout_sec: int = 120) -> str | None:
 
 
 def fallback_answer(question: str, refs: list[dict[str, str]], hits: list[tuple[float, ChunkRecord]]) -> str:
+    """Create a citation-backed answer when Ollama is unavailable.
+
+    Args:
+        question: The original user question.
+        refs: Citation metadata created from the retrieved hits.
+        hits: Ranked retrieval outputs as (score, ChunkRecord) tuples.
+
+    Returns:
+        A plain-text answer built from the top retrieved evidence and cited source references.
+    """
     lines = [
         "No local LLM response was available, so this is an extractive answer from retrieved sources.",
         "",
@@ -274,6 +364,19 @@ def answer_mode(
     use_llm: bool,
     hits: list[tuple[float, ChunkRecord]],
 ) -> str:
+    """Answer a question using retrieved evidence and source tags.
+
+    Args:
+        question: The user's question.
+        context: Concatenated evidence text built from selected hits.
+        refs: Citation metadata associated with each evidence entry.
+        model: Ollama model name to use when LLM generation is enabled.
+        use_llm: Whether to call the local Ollama model.
+        hits: The ranked retrieval results used as fallback evidence.
+
+    Returns:
+        A generated answer string with source citations, or a fallback answer if the model is unavailable.
+    """
     prompt = (
         "You are a pyrolysis and lignocellulosic domain assistant. "
         "Answer only from the provided sources. If uncertain, say so clearly. "
@@ -301,6 +404,19 @@ def feasibility_mode(
     use_llm: bool,
     hits: list[tuple[float, ChunkRecord]],
 ) -> str:
+    """Generate a structured feasibility assessment from retrieved evidence.
+
+    Args:
+        question: Evaluation question or target being assessed.
+        context: Evidence text assembled from the top retrieved sources.
+        refs: Citation metadata for the sources in context.
+        model: Ollama model name to use when LLM generation is enabled.
+        use_llm: Whether to call the local Ollama model.
+        hits: Ranked retrieval results used for fallback content.
+
+    Returns:
+        A markdown-style feasibility review containing facts, assumptions, unknowns, signals, and next steps.
+    """
     prompt = (
         "You are performing a feasibility pre-review for pyrolysis and lignocellulosic IP evaluation. "
         "Use only the source excerpts. Do not invent data. Cite [S#] for each factual claim.\n\n"
@@ -370,6 +486,14 @@ def feasibility_mode(
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse command-line arguments for the local RAG workflow.
+
+    Args:
+        None. Input is taken from sys.argv.
+
+    Returns:
+        An argparse namespace containing all CLI options and values.
+    """
     parser = argparse.ArgumentParser(description="Local RAG for pyrolysis and lignocellulosic expert review.")
     parser.add_argument("--build-index", action="store_true", help="Build or rebuild the local vector index")
     parser.add_argument("--index-dir", default=str(DEFAULT_INDEX_DIR), help="Index directory")
@@ -404,6 +528,14 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    """Run the local RAG workflow from the command line.
+
+    Args:
+        None. Input comes from CLI arguments parsed by parse_args().
+
+    Returns:
+        None. The function prints the built index status or the generated answer text.
+    """
     args = parse_args()
     index_dir = Path(args.index_dir)
 

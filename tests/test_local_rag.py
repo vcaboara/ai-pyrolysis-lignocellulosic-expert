@@ -1,0 +1,171 @@
+import importlib.util
+import json
+import tempfile
+import unittest
+from pathlib import Path
+
+from pyrolysis_lignocellulosic_ai_training.local_rag import (
+    ChunkRecord,
+    _chunk_records_from_rows,
+    _source_type_for_path,
+    answer_mode,
+    build_context,
+    build_index,
+    fallback_answer,
+    load_corpora,
+    load_index,
+    retrieve,
+)
+
+
+class LocalRagHelperTests(unittest.TestCase):
+    def test_source_type_for_path_uses_filename_hints(self):
+        self.assertEqual(_source_type_for_path(
+            Path("/tmp/patent_alpha.jsonl")), "patent")
+        self.assertEqual(_source_type_for_path(
+            Path("/tmp/repo_beta.jsonl")), "repo")
+        self.assertEqual(_source_type_for_path(
+            Path("/tmp/other_data.jsonl")), "external")
+
+    def test_chunk_records_from_rows_maps_fields(self):
+        rows = [{"id": "1", "url": "https://example.com/a",
+                 "title": "Alpha", "text": "Pyrolysis text"}]
+
+        records = _chunk_records_from_rows(rows, "patent")
+
+        self.assertEqual(len(records), 1)
+        self.assertEqual(records[0].chunk_id, "1")
+        self.assertEqual(records[0].source_type, "patent")
+        self.assertEqual(records[0].source_url, "https://example.com/a")
+        self.assertEqual(records[0].title, "Alpha")
+        self.assertEqual(records[0].text, "Pyrolysis text")
+
+    def test_load_corpora_uses_path_type_and_ignores_missing_files(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            patent_path = root / "patent_chunks.jsonl"
+            repo_path = root / "repo_chunks.jsonl"
+            other_path = root / "misc_chunks.jsonl"
+
+            patent_path.write_text(
+                json.dumps(
+                    {"id": "p1", "url": "https://patent.example/1",
+                        "title": "Patent", "text": "Biomass pyrolysis"}
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            repo_path.write_text(
+                json.dumps({"id": "r1", "url": "https://repo.example/1",
+                           "title": "Repo", "text": "Gas cleanup"})
+                + "\n",
+                encoding="utf-8",
+            )
+            other_path.write_text(
+                json.dumps(
+                    {"id": "e1", "url": "https://external.example/1",
+                        "title": "External", "text": "Thermal conversion"}
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            records = load_corpora(
+                [patent_path, repo_path, other_path, root / "missing.jsonl"])
+
+        self.assertEqual(len(records), 3)
+        self.assertEqual([r.source_type for r in records],
+                         ["patent", "repo", "external"])
+
+    def test_build_and_load_index_roundtrip(self):
+        records = [
+            ChunkRecord("1", "patent", "https://a", "Pyrolysis reactor",
+                        "Pyrolysis of biomass improves conversion."),
+            ChunkRecord("2", "repo", "https://b", "Reactor notes",
+                        "Heat recovery and gas cleaning."),
+        ]
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index_dir = Path(tmpdir) / "index"
+            build_index(records, index_dir)
+            vectorizer, matrix, loaded = load_index(index_dir)
+
+        self.assertIsNotNone(vectorizer)
+        self.assertIsNotNone(matrix)
+        self.assertEqual(len(loaded), 2)
+        self.assertEqual(loaded[0].chunk_id, "1")
+        self.assertEqual(loaded[1].source_type, "repo")
+
+    def test_retrieve_filters_by_source_and_dedupes_urls(self):
+        records = [
+            ChunkRecord("1", "patent", "https://a",
+                        "Pyrolysis reactor", "Biomass pyrolysis is efficient."),
+            ChunkRecord("2", "patent", "https://a",
+                        "Duplicate patent", "This is the same source URL."),
+            ChunkRecord("3", "repo", "https://b", "Repo addendum",
+                        "Biochar and gas cleanup details."),
+        ]
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index_dir = Path(tmpdir) / "index"
+            build_index(records, index_dir)
+            vectorizer, matrix, _ = load_index(index_dir)
+            hits = retrieve(
+                query="pyrolysis biomass",
+                vectorizer=vectorizer,
+                matrix=matrix,
+                records=records,
+                top_k=3,
+                external_boost=0.0,
+                dedupe_sources=True,
+                mode="answer",
+                source_filter="patent",
+            )
+
+        self.assertTrue(all(item[1].source_type == "patent" for item in hits))
+        self.assertLessEqual(len(hits), 2)
+
+    def test_build_context_and_answer_fallback_include_citations(self):
+        hits = [(0.9, ChunkRecord("1", "patent", "https://a",
+                 "Patent title", "A long pyrolysis description."))]
+
+        context, refs = build_context(hits)
+        self.assertIn("[S1]", context)
+        self.assertEqual(refs[0]["ref"], "S1")
+        self.assertEqual(refs[0]["url"], "https://a")
+
+        fallback = fallback_answer("What is pyrolysis?", refs, hits)
+        self.assertIn("What is pyrolysis?", fallback)
+        self.assertIn("[S1]", fallback)
+
+        response = answer_mode(
+            question="What is pyrolysis?",
+            context=context,
+            refs=refs,
+            model="dummy",
+            use_llm=False,
+            hits=hits,
+        )
+        self.assertIn("Most relevant evidence:", response)
+        self.assertIn("Citations:", response)
+
+
+ROOT = Path(__file__).resolve().parents[1]
+RUN_LOCAL_CI_PATH = ROOT / "run_local_ci.py"
+RUN_LOCAL_CI_SPEC = importlib.util.spec_from_file_location(
+    "run_local_ci", RUN_LOCAL_CI_PATH)
+assert RUN_LOCAL_CI_SPEC is not None
+assert RUN_LOCAL_CI_SPEC.loader is not None
+run_local_ci = importlib.util.module_from_spec(RUN_LOCAL_CI_SPEC)
+RUN_LOCAL_CI_SPEC.loader.exec_module(run_local_ci)
+
+
+class RunLocalCiCliTests(unittest.TestCase):
+    def test_parse_args_supports_fix_format_flag(self):
+        args = run_local_ci.parse_args(["--fix-format"])
+        self.assertTrue(args.fix_format)
+        self.assertFalse(args.format)
+
+
+if __name__ == "__main__":
+    unittest.main()
