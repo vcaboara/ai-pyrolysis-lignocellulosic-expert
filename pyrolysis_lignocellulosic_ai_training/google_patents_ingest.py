@@ -34,7 +34,10 @@ def collapse_repeated_token_spans(text: str, min_span_tokens: int = 10, max_span
             right = tokens[i + window : i + (window * 2)]
             if left == right:
                 out.extend(left)
-                i += window * 2
+                j = i + window * 2
+                while j + window <= len(tokens) and tokens[j : j + window] == left:
+                    j += window
+                i = j
                 repeated = True
                 break
         if not repeated:
