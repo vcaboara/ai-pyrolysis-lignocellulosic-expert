@@ -15,11 +15,14 @@ DEFAULT_QUERY_URLS = [
 
 
 def normalize_whitespace(text: str) -> str:
+    """Normalize whitespace by collapsing consecutive spaces into one and trimming."""
     text = re.sub(r"\s+", " ", text)
     return text.strip()
 
 
-def collapse_repeated_token_spans(text: str, min_span_tokens: int = 10, max_span_tokens: int = 60) -> str:
+def collapse_repeated_token_spans(text: str,
+                                  min_span_tokens: int = 10,
+                                  max_span_tokens: int = 60) -> str:
     """Collapse repeated token spans so repetitive patent text doesn't dominate the corpus."""
     tokens = text.split()
     if len(tokens) < min_span_tokens * 2:
@@ -34,10 +37,10 @@ def collapse_repeated_token_spans(text: str, min_span_tokens: int = 10, max_span
 
         window = min(max_span_tokens, max(2, min_span_tokens))
         while window <= max_span_tokens and i + window <= len(tokens):
-            segment = tokens[i : i + window]
+            segment = tokens[i: i + window]
             repeat_count = 1
             j = i + window
-            while j + window <= len(tokens) and tokens[j : j + window] == segment:
+            while j + window <= len(tokens) and tokens[j: j + window] == segment:
                 repeat_count += 1
                 j += window
             if repeat_count >= 2 and (window * repeat_count) > best_length:
@@ -58,6 +61,7 @@ def collapse_repeated_token_spans(text: str, min_span_tokens: int = 10, max_span
 
 
 def dedupe_consecutive_sentences(text: str) -> str:
+    """Remove consecutive duplicate sentences from the text."""
     parts = re.split(r"(?<=[.!?])\s+", text)
     cleaned: list[str] = []
     prev_norm = ""
@@ -74,6 +78,7 @@ def dedupe_consecutive_sentences(text: str) -> str:
 
 
 def clean_patent_text(text: str) -> str:
+    """Apply a series of cleaning steps to patent text, including whitespace normalization, repeated token span collapse, and consecutive sentence deduplication."""
     text = normalize_whitespace(text)
     text = collapse_repeated_token_spans(text)
     text = dedupe_consecutive_sentences(text)
@@ -81,6 +86,7 @@ def clean_patent_text(text: str) -> str:
 
 
 def chunk_text(text: str, max_chars: int = 2200, overlap: int = 220) -> list[str]:
+    """Split text into chunks of at most max_chars, with optional overlap between chunks."""
     if len(text) <= max_chars:
         return [text]
     chunks = []
@@ -95,7 +101,7 @@ def chunk_text(text: str, max_chars: int = 2200, overlap: int = 220) -> list[str
 
 
 def extract_patent_codes(text: str) -> list[str]:
-    # Common granted/published formats like US12570904B2, WO2020123456A1, EP2291488A2
+    """Extract patent codes from the text using common granted/published formats like US12570904B2, WO2020123456A1, EP2291488A2."""
     rx = re.compile(r"\b(?:US|WO|EP|CN|JP|KR|CA|RU|AU)\d{5,12}[A-Z]?\d?\b")
     seen = set()
     out = []
@@ -107,12 +113,23 @@ def extract_patent_codes(text: str) -> list[str]:
 
 
 def query_to_download_url(query_url: str) -> str:
-    # Mirrors the Download link seen on Google Patents query pages.
-    encoded = quote(query_url.split("?", 1)[1] if "?" in query_url else "", safe="")
+    """Mirrors the Download link seen on Google Patents query pages."""
+    encoded = quote(query_url.split("?", 1)[
+                    1] if "?" in query_url else "", safe="")
     return f"https://patents.google.com/xhr/query?url={encoded}&exp=&download=true"
 
 
 def fetch_query_page(session: requests.Session, url: str, timeout: int) -> dict:
+    """Fetch the Google Patents query page and extract relevant information.
+
+    Args:
+        session: The requests session to use for HTTP requests.
+        url: The URL of the Google Patents query page.
+        timeout: Timeout for the HTTP request in seconds.
+
+    Returns:
+        A dictionary containing the query URL, download URL, top patent codes, query text excerpt, and CSV snapshot.
+    """
     resp = session.get(url, timeout=timeout)
     resp.raise_for_status()
     html = resp.text
@@ -149,6 +166,16 @@ def fetch_query_page(session: requests.Session, url: str, timeout: int) -> dict:
 
 
 def fetch_patent_detail(session: requests.Session, patent_code: str, timeout: int) -> dict | None:
+    """Fetch the detailed page for a specific patent code from Google Patents.
+
+    Args:
+        session: The requests session to use for HTTP requests.
+        patent_code: The patent code to fetch (e.g., US7959765B2).
+        timeout: Timeout for the HTTP request in seconds.
+
+    Returns:
+        A dictionary containing the patent code, URL, title, and full text, or None if the request fails.
+    """
     detail_url = f"https://patents.google.com/patent/{patent_code}/en"
     try:
         resp = session.get(detail_url, timeout=timeout)
@@ -164,10 +191,13 @@ def fetch_patent_detail(session: requests.Session, patent_code: str, timeout: in
         abstract_value = abstract_tag.get("content") if abstract_tag else ""
         abstract = abstract_value.strip() if isinstance(abstract_value, str) else ""
 
-        claims_nodes = soup.find_all(["claim-text", "div"], attrs={"num": True})
-        claims_text = " ".join(node.get_text(" ", strip=True) for node in claims_nodes[:80])
+        claims_nodes = soup.find_all(["claim-text", "div"],
+                                     attrs={"num": True})
+        claims_text = " ".join(node.get_text(" ", strip=True)
+                               for node in claims_nodes[:80])
 
-        title_abstract_claims = " ".join(part for part in [title, abstract, claims_text] if part)
+        title_abstract_claims = " ".join(
+            part for part in [title, abstract, claims_text] if part)
         raw_text = soup.get_text(" ", strip=True)[:50000]
         full_text = clean_patent_text(title_abstract_claims[:20000])
         if len(full_text) < 200:
@@ -184,11 +214,15 @@ def fetch_patent_detail(session: requests.Session, patent_code: str, timeout: in
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Ingest Google Patents prior art into a local corpus.")
-    parser.add_argument("--out-dir", default="patents_corpus", help="Output directory")
+    """Main entry point for the Google Patents ingestion script."""
+    parser = argparse.ArgumentParser(
+        description="Ingest Google Patents prior art into a local corpus.")
+    parser.add_argument("--out-dir", default="patents_corpus",
+                        help="Output directory")
     parser.add_argument("--timeout", type=int, default=30)
     parser.add_argument("--delay", type=float, default=0.2)
-    parser.add_argument("--max-patents", type=int, default=80, help="Max patent detail pages to fetch")
+    parser.add_argument("--max-patents", type=int, default=80,
+                        help="Max patent detail pages to fetch")
     parser.add_argument(
         "--patent-code",
         action="append",
@@ -259,7 +293,10 @@ def main() -> None:
     (out_dir / "patent_queries.json").write_text(
         json.dumps(query_results, indent=2, ensure_ascii=False), encoding="utf-8"
     )
-    (out_dir / "patent_pages.json").write_text(json.dumps(patent_pages, indent=2, ensure_ascii=False), encoding="utf-8")
+    (out_dir / "patent_pages.json").write_text(json.dumps(patent_pages,
+                                                          indent=2,
+                                                          ensure_ascii=False),
+                                               encoding="utf-8")
 
     with (out_dir / "patent_chunks.jsonl").open("w", encoding="utf-8") as f:
         for row in chunks:
