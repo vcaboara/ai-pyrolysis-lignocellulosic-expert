@@ -85,7 +85,22 @@ def _source_type_for_path(path: Path) -> str:
     return "external"
 
 
-def _dedupe_signature(source_type: str, source_url: str, title: str, text: str, max_chars: int = 2048) -> str:
+def _normalize_signature_field(value: str, max_chars: int = 128) -> str:
+    """Normalize and truncate a signature field so metadata cannot grow unboundedly."""
+    cleaned = " ".join(str(value).split()).lower()
+    if len(cleaned) <= max_chars:
+        return cleaned
+    return cleaned[: max_chars - 1].rstrip() + "…"
+
+
+def _dedupe_signature(
+    source_type: str,
+    source_url: str,
+    title: str,
+    text: str,
+    max_chars: int = 2048,
+    max_field_chars: int = 128,
+) -> str:
     """Create a stable, bounded signature for deduplicating equivalent chunk records.
 
     Args:
@@ -94,13 +109,17 @@ def _dedupe_signature(source_type: str, source_url: str, title: str, text: str, 
         title: Chunk title.
         text: Chunk body text.
         max_chars: Maximum number of characters to hash from the text.
+        max_field_chars: Maximum number of characters retained for URL/title metadata.
 
     Returns:
         A compact signature that is stable across equivalent records and bounded in size.
     """
-    normalized_text = " ".join(text.split()).lower()
+    normalized_text = " ".join(str(text).split()).lower()
     digest = hashlib.sha256(normalized_text[:max_chars].encode("utf-8")).hexdigest()
-    return f"{source_type}|{source_url}|{title.lower()}|{digest}"
+    url_fragment = _normalize_signature_field(source_url, max_chars=max_field_chars)
+    title_fragment = _normalize_signature_field(title, max_chars=max_field_chars)
+    signature = f"{source_type}|{url_fragment}|{title_fragment}|{digest}"
+    return signature[:512]
 
 
 def _chunk_records_from_rows(rows: list[dict[str, Any]], source_type: str) -> list[ChunkRecord]:

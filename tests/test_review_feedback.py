@@ -21,6 +21,16 @@ class ReviewFeedbackTests(unittest.TestCase):
         self.assertTrue(sig.startswith(
             "patent|https://example.com/patent|example title|"))
 
+    def test_dedupe_signature_truncates_oversized_metadata(self) -> None:
+        huge_url = "https://example.com/" + ("a" * 10000)
+        huge_title = "Example title " + ("b" * 10000)
+        sig = _dedupe_signature("patent", huge_url, huge_title, "word " * 5000)
+
+        self.assertLess(len(sig), 512)
+        self.assertNotIn(huge_url, sig)
+        self.assertNotIn(huge_title, sig)
+        self.assertTrue(sig.startswith("patent|"))
+
 
 if __name__ == "__main__":
     unittest.main()

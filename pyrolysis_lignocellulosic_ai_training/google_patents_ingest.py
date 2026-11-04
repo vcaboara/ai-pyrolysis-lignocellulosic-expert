@@ -117,9 +117,13 @@ def fetch_query_page(session: requests.Session, url: str, timeout: int) -> dict:
     resp.raise_for_status()
     html = resp.text
     soup = BeautifulSoup(html, "lxml")
-    text = normalize_whitespace(soup.get_text(" ", strip=True))
 
-    patent_codes = extract_patent_codes(text)
+    patent_codes = extract_patent_codes(html)
+    text = ""
+    if not patent_codes:
+        text = normalize_whitespace(soup.get_text(" ", strip=True))
+        patent_codes = extract_patent_codes(text)
+
     # Keep the first N to focus on top-ranked results shown by Google Patents page.
     top_codes = patent_codes[:120]
 
@@ -131,6 +135,9 @@ def fetch_query_page(session: requests.Session, url: str, timeout: int) -> dict:
             csv_text = csv_resp.text
     except requests.RequestException:
         csv_text = ""
+
+    if not text:
+        text = normalize_whitespace(soup.get_text(" ", strip=True))
 
     return {
         "query_url": url,
