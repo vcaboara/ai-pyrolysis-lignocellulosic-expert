@@ -76,7 +76,7 @@ def dedupe_consecutive_sentences(text: str) -> str:
 
 
 def clean_patent_text(text: str) -> str:
-    """Apply a series of cleaning steps to patent text, including whitespace normalization, repeated token span collapse, and consecutive sentence deduplication."""
+    """Apply the patent-text cleanup steps used to normalize and dedupe text."""
     text = normalize_whitespace(text)
     text = collapse_repeated_token_spans(text)
     text = dedupe_consecutive_sentences(text)
@@ -99,7 +99,7 @@ def chunk_text(text: str, max_chars: int = 2200, overlap: int = 220) -> list[str
 
 
 def extract_patent_codes(text: str) -> list[str]:
-    """Extract patent codes from the text using common granted/published formats like US12570904B2, WO2020123456A1, EP2291488A2."""
+    """Extract codes from common granted or published patent formats."""
     rx = re.compile(r"\b(?:US|WO|EP|CN|JP|KR|CA|RU|AU)\d{5,12}[A-Z]?\d?\b")
     seen = set()
     out = []
