@@ -19,6 +19,67 @@ def normalize_whitespace(text: str) -> str:
     return text.strip()
 
 
+def collapse_repeated_token_spans(text: str, min_span_tokens: int = 10, max_span_tokens: int = 60) -> str:
+    """Collapse repeated token spans so repetitive patent text doesn't dominate the corpus."""
+    tokens = text.split()
+    if len(tokens) < min_span_tokens * 2:
+        return text
+
+    out: list[str] = []
+    i = 0
+    while i < len(tokens):
+        best_span: list[str] | None = None
+        best_repeat = 1
+        best_length = 0
+
+        window = min(max_span_tokens, max(2, min_span_tokens))
+        while window <= max_span_tokens and i + window <= len(tokens):
+            segment = tokens[i : i + window]
+            repeat_count = 1
+            j = i + window
+            while j + window <= len(tokens) and tokens[j : j + window] == segment:
+                repeat_count += 1
+                j += window
+            if repeat_count >= 2 and (window * repeat_count) > best_length:
+                best_span = segment
+                best_repeat = repeat_count
+                best_length = window * repeat_count
+            window += 1
+
+        if best_span is None:
+            out.append(tokens[i])
+            i += 1
+            continue
+
+        out.extend(best_span)
+        i += len(best_span) * best_repeat
+
+    return " ".join(out)
+
+
+def dedupe_consecutive_sentences(text: str) -> str:
+    parts = re.split(r"(?<=[.!?])\s+", text)
+    cleaned: list[str] = []
+    prev_norm = ""
+    for part in parts:
+        sentence = normalize_whitespace(part)
+        if not sentence:
+            continue
+        norm = sentence.lower()
+        if norm == prev_norm:
+            continue
+        cleaned.append(sentence)
+        prev_norm = norm
+    return " ".join(cleaned)
+
+
+def clean_patent_text(text: str) -> str:
+    text = normalize_whitespace(text)
+    text = collapse_repeated_token_spans(text)
+    text = dedupe_consecutive_sentences(text)
+    return normalize_whitespace(text)
+
+
 def chunk_text(text: str, max_chars: int = 2200, overlap: int = 220) -> list[str]:
     if len(text) <= max_chars:
         return [text]
@@ -99,9 +160,11 @@ def fetch_patent_detail(session: requests.Session, patent_code: str, timeout: in
         claims_nodes = soup.find_all(["claim-text", "div"], attrs={"num": True})
         claims_text = " ".join(node.get_text(" ", strip=True) for node in claims_nodes[:80])
 
-        full_text = normalize_whitespace(" ".join([title, abstract, claims_text]))
+        title_abstract_claims = " ".join(part for part in [title, abstract, claims_text] if part)
+        raw_text = soup.get_text(" ", strip=True)[:50000]
+        full_text = clean_patent_text(title_abstract_claims[:20000])
         if len(full_text) < 200:
-            full_text = normalize_whitespace(soup.get_text(" ", strip=True))[:50000]
+            full_text = clean_patent_text(raw_text)
 
         return {
             "patent_code": patent_code,
