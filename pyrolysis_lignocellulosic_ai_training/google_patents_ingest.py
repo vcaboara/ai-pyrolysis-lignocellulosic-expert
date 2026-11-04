@@ -20,9 +20,7 @@ def normalize_whitespace(text: str) -> str:
     return text.strip()
 
 
-def collapse_repeated_token_spans(text: str,
-                                  min_span_tokens: int = 10,
-                                  max_span_tokens: int = 60) -> str:
+def collapse_repeated_token_spans(text: str, min_span_tokens: int = 10, max_span_tokens: int = 60) -> str:
     """Collapse repeated token spans so repetitive patent text doesn't dominate the corpus."""
     tokens = text.split()
     if len(tokens) < min_span_tokens * 2:
@@ -37,10 +35,10 @@ def collapse_repeated_token_spans(text: str,
 
         window = min(max_span_tokens, max(2, min_span_tokens))
         while window <= max_span_tokens and i + window <= len(tokens):
-            segment = tokens[i: i + window]
+            segment = tokens[i : i + window]
             repeat_count = 1
             j = i + window
-            while j + window <= len(tokens) and tokens[j: j + window] == segment:
+            while j + window <= len(tokens) and tokens[j : j + window] == segment:
                 repeat_count += 1
                 j += window
             if repeat_count >= 2 and (window * repeat_count) > best_length:
@@ -114,8 +112,7 @@ def extract_patent_codes(text: str) -> list[str]:
 
 def query_to_download_url(query_url: str) -> str:
     """Mirrors the Download link seen on Google Patents query pages."""
-    encoded = quote(query_url.split("?", 1)[
-                    1] if "?" in query_url else "", safe="")
+    encoded = quote(query_url.split("?", 1)[1] if "?" in query_url else "", safe="")
     return f"https://patents.google.com/xhr/query?url={encoded}&exp=&download=true"
 
 
@@ -191,13 +188,10 @@ def fetch_patent_detail(session: requests.Session, patent_code: str, timeout: in
         abstract_value = abstract_tag.get("content") if abstract_tag else ""
         abstract = abstract_value.strip() if isinstance(abstract_value, str) else ""
 
-        claims_nodes = soup.find_all(["claim-text", "div"],
-                                     attrs={"num": True})
-        claims_text = " ".join(node.get_text(" ", strip=True)
-                               for node in claims_nodes[:80])
+        claims_nodes = soup.find_all(["claim-text", "div"], attrs={"num": True})
+        claims_text = " ".join(node.get_text(" ", strip=True) for node in claims_nodes[:80])
 
-        title_abstract_claims = " ".join(
-            part for part in [title, abstract, claims_text] if part)
+        title_abstract_claims = " ".join(part for part in [title, abstract, claims_text] if part)
         raw_text = soup.get_text(" ", strip=True)[:50000]
         full_text = clean_patent_text(title_abstract_claims[:20000])
         if len(full_text) < 200:
@@ -215,14 +209,11 @@ def fetch_patent_detail(session: requests.Session, patent_code: str, timeout: in
 
 def main() -> None:
     """Main entry point for the Google Patents ingestion script."""
-    parser = argparse.ArgumentParser(
-        description="Ingest Google Patents prior art into a local corpus.")
-    parser.add_argument("--out-dir", default="patents_corpus",
-                        help="Output directory")
+    parser = argparse.ArgumentParser(description="Ingest Google Patents prior art into a local corpus.")
+    parser.add_argument("--out-dir", default="patents_corpus", help="Output directory")
     parser.add_argument("--timeout", type=int, default=30)
     parser.add_argument("--delay", type=float, default=0.2)
-    parser.add_argument("--max-patents", type=int, default=80,
-                        help="Max patent detail pages to fetch")
+    parser.add_argument("--max-patents", type=int, default=80, help="Max patent detail pages to fetch")
     parser.add_argument(
         "--patent-code",
         action="append",
@@ -293,10 +284,7 @@ def main() -> None:
     (out_dir / "patent_queries.json").write_text(
         json.dumps(query_results, indent=2, ensure_ascii=False), encoding="utf-8"
     )
-    (out_dir / "patent_pages.json").write_text(json.dumps(patent_pages,
-                                                          indent=2,
-                                                          ensure_ascii=False),
-                                               encoding="utf-8")
+    (out_dir / "patent_pages.json").write_text(json.dumps(patent_pages, indent=2, ensure_ascii=False), encoding="utf-8")
 
     with (out_dir / "patent_chunks.jsonl").open("w", encoding="utf-8") as f:
         for row in chunks:
