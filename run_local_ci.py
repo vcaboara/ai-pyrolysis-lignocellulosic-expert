@@ -26,26 +26,18 @@ def run_step(label: str, command: list[str]) -> int:
 
 
 def add_common_parser(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--format", action="store_true",
-                        help="Run Black formatting check")
-    parser.add_argument("--fix-format", action="store_true",
-                        help="Auto-format Python files with Black")
-    parser.add_argument("--lint", action="store_true",
-                        help="Run Ruff lint checks")
-    parser.add_argument("--mypy", action="store_true",
-                        help="Run mypy static analysis")
+    parser.add_argument("--format", action="store_true", help="Run Black formatting check")
+    parser.add_argument("--fix-format", action="store_true", help="Auto-format Python files with Black")
+    parser.add_argument("--lint", action="store_true", help="Run Ruff lint checks")
+    parser.add_argument("--mypy", action="store_true", help="Run mypy static analysis")
     parser.add_argument("--tests", action="store_true", help="Run unit tests")
-    parser.add_argument("--privacy", action="store_true",
-                        help="Run privacy content/path scan")
-    parser.add_argument("--compose", action="store_true",
-                        help="Validate Docker Compose config")
-    parser.add_argument("--all", action="store_true",
-                        help="Run all quality checks")
+    parser.add_argument("--privacy", action="store_true", help="Run privacy content/path scan")
+    parser.add_argument("--compose", action="store_true", help="Validate Docker Compose config")
+    parser.add_argument("--all", action="store_true", help="Run all quality checks")
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Local CI for the project quality gates")
+    parser = argparse.ArgumentParser(description="Local CI for the project quality gates")
     add_common_parser(parser)
     return parser.parse_args(argv)
 
@@ -82,11 +74,10 @@ def run_compose_check() -> int:
     return run_step("Compose validation", ["docker", "compose", "-f", "docker-compose.yml", "config"])
 
 
-def main() -> int:
-    args = parse_args()
+def main_for_tests(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
     run_all = args.all or not any(
-        [args.format, args.fix_format, args.lint, args.mypy,
-            args.tests, args.privacy, args.compose]
+        [args.format, args.fix_format, args.lint, args.mypy, args.tests, args.privacy, args.compose]
     )
 
     if run_all or args.tests:
@@ -104,7 +95,7 @@ def main() -> int:
         if exit_code != 0:
             return exit_code
 
-    if run_all or args.fix_format:
+    if args.fix_format:
         exit_code = run_format(check_only=False)
         if exit_code != 0:
             return exit_code
@@ -125,6 +116,10 @@ def main() -> int:
             return exit_code
 
     return 0
+
+
+def main() -> int:
+    return main_for_tests()
 
 
 if __name__ == "__main__":

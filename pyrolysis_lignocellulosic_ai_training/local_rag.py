@@ -255,12 +255,18 @@ def retrieve(
         if current_patent < min_patent:
             patent_pool = [idx for idx in ranked_idx if records[idx].source_type == "patent" and idx not in selected]
             while patent_pool and current_patent < min_patent and selected:
+                candidate_idx = patent_pool.pop(0)
+                candidate_url = records[candidate_idx].source_url
+                if dedupe_sources and candidate_url and candidate_url in seen_urls:
+                    continue
                 replace_at = len(selected) - 1
                 while replace_at >= 0 and records[selected[replace_at]].source_type == "patent":
                     replace_at -= 1
                 if replace_at < 0:
                     break
-                selected[replace_at] = patent_pool.pop(0)
+                selected[replace_at] = candidate_idx
+                if candidate_url:
+                    seen_urls.add(candidate_url)
                 current_patent += 1
 
     if len(selected) < top_k:
@@ -270,7 +276,12 @@ def retrieve(
         for idx in fallback_candidates:
             if idx in selected:
                 continue
+            rec = records[idx]
+            if dedupe_sources and rec.source_url and rec.source_url in seen_urls:
+                continue
             selected.append(idx)
+            if rec.source_url:
+                seen_urls.add(rec.source_url)
             if len(selected) >= top_k:
                 break
 
