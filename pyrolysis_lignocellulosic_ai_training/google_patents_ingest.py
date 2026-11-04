@@ -58,6 +58,7 @@ def collapse_repeated_token_spans(text: str, min_span_tokens: int = 10, max_span
 
 
 def dedupe_consecutive_sentences(text: str) -> str:
+    # TODO: move r"" outside the method/re.split call to avoid having to regenerate
     parts = re.split(r"(?<=[.!?])\s+", text)
     cleaned: list[str] = []
     prev_norm = ""
