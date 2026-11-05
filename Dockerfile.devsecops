@@ -10,17 +10,15 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Install both runtime and dev tooling dependencies used by run_local_ci.py.
-COPY pyrolysis_lignocellulosic_ai_training/requirements.txt /tmp/requirements.txt
-COPY requirements-dev.txt /tmp/requirements-dev.txt
+COPY pyrolysis_lignocellulosic_ai_training/requirements.txt requirements-dev.txt ./
 RUN python -m pip install --upgrade pip \
-    && python -m pip install -r /tmp/requirements.txt \
-    && python -m pip install -r /tmp/requirements-dev.txt
+    && python -m pip install -r requirements.txt \
+    && python -m pip install -r requirements-dev.txt
 
 # Copy only repo paths needed by the local CI gates.
 # Files
 COPY pyproject.toml \
     run_local_ci.py \
-    requirements-dev.txt \
     ./
 # Directories
 COPY pyrolysis_lignocellulosic_ai_training ./pyrolysis_lignocellulosic_ai_training
