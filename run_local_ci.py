@@ -37,6 +37,7 @@ def add_common_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--lint", action="store_true", help="Run Ruff lint checks")
     parser.add_argument("--mypy", action="store_true", help="Run mypy static analysis")
     parser.add_argument("--security", action="store_true", help="Run Bandit security scan")
+    parser.add_argument("--deps-audit", action="store_true", help="Run pip-audit dependency vulnerability scan")
     parser.add_argument("--tests", action="store_true", help="Run unit tests")
     parser.add_argument("--privacy", action="store_true", help="Run privacy content/path scan")
     parser.add_argument("--compose", action="store_true", help="Validate Docker Compose config")
@@ -70,6 +71,21 @@ def run_security() -> int:
     return run_step("Bandit security scan", command)
 
 
+def run_deps_audit() -> int:
+    command = [
+        sys.executable,
+        "-m",
+        "pip_audit",
+        "-r",
+        "pyrolysis_lignocellulosic_ai_training/requirements.txt",
+        "-r",
+        "requirements-dev.txt",
+        "--progress-spinner",
+        "off",
+    ]
+    return run_step("Dependency vulnerability scan (pip-audit)", command)
+
+
 def run_tests() -> int:
     return run_step("Unit tests", [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-v"])
 
@@ -89,7 +105,17 @@ def run_compose_check() -> int:
 def main_for_tests(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     run_all = args.all or not any(
-        [args.format, args.fix_format, args.lint, args.mypy, args.security, args.tests, args.privacy, args.compose]
+        [
+            args.format,
+            args.fix_format,
+            args.lint,
+            args.mypy,
+            args.security,
+            args.deps_audit,
+            args.tests,
+            args.privacy,
+            args.compose,
+        ]
     )
 
     if run_all or args.tests:
@@ -99,6 +125,11 @@ def main_for_tests(argv: list[str] | None = None) -> int:
 
     if run_all or args.security:
         exit_code = run_security()
+        if exit_code != 0:
+            return exit_code
+
+    if run_all or args.deps_audit:
+        exit_code = run_deps_audit()
         if exit_code != 0:
             return exit_code
 

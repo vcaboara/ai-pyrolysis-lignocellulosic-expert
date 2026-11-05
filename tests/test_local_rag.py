@@ -207,6 +207,7 @@ class RunLocalCiCliTests(unittest.TestCase):
 
     def test_main_with_all_does_not_trigger_fix_format(self):
         check_modes = []
+        dep_audit_called = False
 
         def fake_run_tests():
             return 0
@@ -224,6 +225,11 @@ class RunLocalCiCliTests(unittest.TestCase):
         def fake_run_mypy():
             return 0
 
+        def fake_run_deps_audit():
+            nonlocal dep_audit_called
+            dep_audit_called = True
+            return 0
+
         def fake_run_compose():
             return 0
 
@@ -237,6 +243,7 @@ class RunLocalCiCliTests(unittest.TestCase):
             mock.patch.object(run_local_ci, "run_format", side_effect=fake_run_format),
             mock.patch.object(run_local_ci, "run_lint", side_effect=fake_run_lint),
             mock.patch.object(run_local_ci, "run_mypy", side_effect=fake_run_mypy),
+            mock.patch.object(run_local_ci, "run_deps_audit", side_effect=fake_run_deps_audit),
             mock.patch.object(run_local_ci, "run_compose_check", side_effect=fake_run_compose),
         ):
             exit_code = run_local_ci.main_for_tests(["--all"])
@@ -244,6 +251,11 @@ class RunLocalCiCliTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertIn(True, check_modes)
         self.assertNotIn(False, check_modes)
+        self.assertTrue(dep_audit_called)
+
+    def test_parse_args_supports_deps_audit_flag(self):
+        args = run_local_ci.parse_args(["--deps-audit"])
+        self.assertTrue(args.deps_audit)
 
 
 if __name__ == "__main__":
