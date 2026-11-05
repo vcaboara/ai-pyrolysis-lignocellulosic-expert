@@ -6,15 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile.devsecops
     working_dir: /workspace
-    command:
-      - python
-      - run_local_ci.py
-      - --tests
-      - --security
-      - --privacy
-      - --format
-      - --lint
-      - --mypy
+    # Uses image CMD (see Dockerfile.devsecops) to avoid duplicating the gate list here.
     volumes:
       - .:/workspace
     profiles:
