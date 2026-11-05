@@ -1,5 +1,7 @@
 import argparse
 import re
+
+# The repo hygiene scan shells out to git with fixed arguments only; the subprocess import is intentional and bounded.
 import subprocess  # nosec B404
 from pathlib import Path
 
@@ -60,7 +62,8 @@ BINARY_EXTENSIONS = {
 
 
 def run_git(args: list[str]) -> subprocess.CompletedProcess:
-    return subprocess.run(["git", *args], cwd=str(ROOT), capture_output=True, text=True)
+    # Git is invoked with a fixed executable and static args only; no user-controlled shell input is passed.
+    return subprocess.run(["git", *args], cwd=str(ROOT), capture_output=True, text=True)  # nosec B603 B607
 
 
 def is_binary_path(path: Path) -> bool:

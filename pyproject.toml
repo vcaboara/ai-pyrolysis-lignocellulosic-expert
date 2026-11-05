@@ -35,5 +35,3 @@ ignore_missing_imports = true
 
 [tool.bandit]
 exclude_dirs = [".git", ".venv", "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache", ".rag_index", "repo_corpus"]
-targets = ["pyrolysis_lignocellulosic_ai_training", "scripts"]
-skips = ["B603", "B607"]

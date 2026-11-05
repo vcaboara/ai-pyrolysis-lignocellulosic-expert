@@ -5,6 +5,12 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
+# Bandit intentionally targets the shipped Python package and repo-support scripts.
+# Tests and generated data directories are excluded from the security baseline.
+BANDIT_SCAN_PATHS = [
+    "pyrolysis_lignocellulosic_ai_training",
+    "scripts",
+]
 PYTHON_FILES = [
     "run_local_ci.py",
     "utils/docker_ollama.py",
@@ -60,19 +66,8 @@ def run_mypy() -> int:
 
 
 def run_security() -> int:
-    return run_step(
-        "Bandit security scan",
-        [
-            sys.executable,
-            "-m",
-            "bandit",
-            "-r",
-            "pyrolysis_lignocellulosic_ai_training",
-            "scripts",
-            "-c",
-            "pyproject.toml",
-        ],
-    )
+    command = [sys.executable, "-m", "bandit", "-c", "pyproject.toml", "-r", *BANDIT_SCAN_PATHS]
+    return run_step("Bandit security scan", command)
 
 
 def run_tests() -> int:
