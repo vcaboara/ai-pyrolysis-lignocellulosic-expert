@@ -63,7 +63,12 @@ BINARY_EXTENSIONS = {
 
 def run_git(args: list[str]) -> subprocess.CompletedProcess:
     # Git is invoked with a fixed executable and static args only; no user-controlled shell input is passed.
-    return subprocess.run(["git", *args], cwd=str(ROOT), capture_output=True, text=True)  # nosec B603 B607
+    return subprocess.run(
+        ["git", "-c", f"safe.directory={ROOT}", *args],
+        cwd=str(ROOT),
+        capture_output=True,
+        text=True,
+    )  # nosec B603 B607
 
 
 def is_binary_path(path: Path) -> bool:

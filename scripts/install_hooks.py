@@ -8,9 +8,7 @@ ROOT = Path(__file__).resolve().parent.parent
 def main() -> int:
     hook_path = ".githooks"
     # Git is invoked with a fixed executable and static repo metadata args only.
-    result = subprocess.run(
-        # nosec B603 B607
-        ["git", "config", "core.hooksPath", hook_path], cwd=str(ROOT))
+    result = subprocess.run(["git", "config", "core.hooksPath", hook_path], cwd=str(ROOT))  # nosec B603 B607
     if result.returncode != 0:
         return result.returncode
     print(f"Configured git hooks path: {hook_path}")
