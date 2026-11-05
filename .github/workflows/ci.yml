@@ -29,18 +29,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-          cache: "pip"
-
-      - name: Install dependencies
+      - name: Build CI container image
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r pyrolysis_lignocellulosic_ai_training/requirements.txt
-          python -m pip install -r requirements-dev.txt
+          docker compose --profile ci build ci
 
-      - name: Run tests + security + privacy + style + typing
+      - name: Run tests + security + privacy + style + typing (compose)
         run: |
-          python run_local_ci.py --tests --security --privacy --format --lint --mypy
+          docker compose --profile ci up --abort-on-container-exit --exit-code-from ci --no-build ci
+
+      - name: Cleanup compose resources
+        if: always()
+        run: |
+          docker compose --profile ci down --rmi local --volumes --remove-orphans

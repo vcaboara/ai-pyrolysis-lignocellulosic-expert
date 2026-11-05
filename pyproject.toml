@@ -34,4 +34,13 @@ show_error_codes = true
 ignore_missing_imports = true
 
 [tool.bandit]
-exclude_dirs = [".git", ".venv", "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache", ".rag_index", "repo_corpus"]
+exclude_dirs = [
+  ".git",
+  ".venv",
+  "__pycache__",
+  ".pytest_cache",
+  ".mypy_cache",
+  ".ruff_cache",
+  ".rag_index",
+  "repo_corpus",
+]
