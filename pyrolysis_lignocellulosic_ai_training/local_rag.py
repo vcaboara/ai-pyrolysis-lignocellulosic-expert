@@ -1,4 +1,5 @@
 import argparse
+import hashlib
 import json
 import re
 from dataclasses import dataclass
@@ -84,6 +85,43 @@ def _source_type_for_path(path: Path) -> str:
     return "external"
 
 
+def _normalize_signature_field(value: str, max_chars: int = 128) -> str:
+    """Normalize and truncate a signature field so metadata cannot grow unboundedly."""
+    cleaned = " ".join(str(value).split()).lower()
+    if len(cleaned) <= max_chars:
+        return cleaned
+    return cleaned[: max_chars - 1].rstrip() + "…"
+
+
+def _dedupe_signature(
+    source_type: str,
+    source_url: str,
+    title: str,
+    text: str,
+    max_chars: int = 2048,
+    max_field_chars: int = 128,
+) -> str:
+    """Create a stable, bounded signature for deduplicating equivalent chunk records.
+
+    Args:
+        source_type: Corpus family such as "patent" or "repo".
+        source_url: Canonical source URL.
+        title: Chunk title.
+        text: Chunk body text.
+        max_chars: Maximum number of characters to hash from the text.
+        max_field_chars: Maximum number of characters retained for URL/title metadata.
+
+    Returns:
+        A compact signature that is stable across equivalent records and bounded in size.
+    """
+    normalized_text = " ".join(str(text).split()).lower()
+    digest = hashlib.sha256(normalized_text[:max_chars].encode("utf-8")).hexdigest()
+    url_fragment = _normalize_signature_field(source_url, max_chars=max_field_chars)
+    title_fragment = _normalize_signature_field(title, max_chars=max_field_chars)
+    signature = f"{source_type}|{url_fragment}|{title_fragment}|{digest}"
+    return signature[:512]
+
+
 def _chunk_records_from_rows(rows: list[dict[str, Any]], source_type: str) -> list[ChunkRecord]:
     """Normalize raw JSON rows into ChunkRecord objects.
 
@@ -120,12 +158,18 @@ def load_corpora(paths: list[Path]) -> list[ChunkRecord]:
         A single list of ChunkRecord objects across all loaded corpora.
     """
     records: list[ChunkRecord] = []
+    seen_signatures: set[str] = set()
     for p in paths:
         if not p.exists():
             continue
         rows = read_jsonl(p)
         source_type = _source_type_for_path(p)
-        records.extend(_chunk_records_from_rows(rows, source_type))
+        for record in _chunk_records_from_rows(rows, source_type):
+            signature = _dedupe_signature(record.source_type, record.source_url, record.title, record.text)
+            if signature in seen_signatures:
+                continue
+            seen_signatures.add(signature)
+            records.append(record)
     return records
 
 
