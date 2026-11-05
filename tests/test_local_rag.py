@@ -227,8 +227,12 @@ class RunLocalCiCliTests(unittest.TestCase):
         def fake_run_compose():
             return 0
 
+        def fake_run_security():
+            return 0
+
         with (
             mock.patch.object(run_local_ci, "run_tests", side_effect=fake_run_tests),
+            mock.patch.object(run_local_ci, "run_security", side_effect=fake_run_security),
             mock.patch.object(run_local_ci, "run_privacy_scan", side_effect=fake_run_privacy),
             mock.patch.object(run_local_ci, "run_format", side_effect=fake_run_format),
             mock.patch.object(run_local_ci, "run_lint", side_effect=fake_run_lint),

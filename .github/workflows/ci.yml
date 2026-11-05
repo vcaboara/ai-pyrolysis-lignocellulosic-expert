@@ -41,6 +41,6 @@ jobs:
           python -m pip install -r pyrolysis_lignocellulosic_ai_training/requirements.txt
           python -m pip install -r requirements-dev.txt
 
-      - name: Run tests + privacy + style + typing
+      - name: Run tests + security + privacy + style + typing
         run: |
-          python run_local_ci.py --tests --privacy --format --lint --mypy
+          python run_local_ci.py --tests --security --privacy --format --lint --mypy
