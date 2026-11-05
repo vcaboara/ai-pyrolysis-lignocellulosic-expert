@@ -4,7 +4,8 @@
   <a href="https://github.com/vcaboara/ai-pyrolysis-lignocellulosic-expert/actions/workflows/ci.yml">
     <img alt="CI status" src="https://github.com/vcaboara/ai-pyrolysis-lignocellulosic-expert/actions/workflows/ci.yml/badge.svg?branch=main" />
   </a>
-Note: Badge is pinned to `main`
+   </br>
+   <small>Note: Badge is pinned to <code>main</code></small>
 </p>
 
 This repository provides a small local retrieval-and-answer workflow for pyrolysis and lignocellulosic research questions. It loads local corpus files, builds a TF-IDF index, retrieves relevant chunks, and can answer questions or produce a feasibility-style review using a local Ollama model when available.
@@ -31,6 +32,7 @@ This workflow also emits the active ref and event context in the GitHub Actions 
     - [Add custom corpora](#add-custom-corpora)
   - [Using run\_local\_ci.py](#using-run_local_cipy)
     - [Run everything](#run-everything)
+    - [Run the same quality gate in a container](#run-the-same-quality-gate-in-a-container)
     - [Run only selected checks](#run-only-selected-checks)
     - [What the CI wrapper checks](#what-the-ci-wrapper-checks)
   - [Running the test suite directly](#running-the-test-suite-directly)
