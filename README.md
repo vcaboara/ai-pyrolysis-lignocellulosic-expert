@@ -6,6 +6,8 @@
   </a>
 </p>
 
+Note: This badge is pinned to `main` because GitHub does not support dynamically selecting the current branch/PR in a plain Markdown badge URL. For branch- or PR-specific status, open the workflow run (Actions / Checks) and see the step summary for the active ref.
+
 This repository provides a small local retrieval-and-answer workflow for pyrolysis and lignocellulosic research questions. It loads local corpus files, builds a TF-IDF index, retrieves relevant chunks, and can answer questions or produce a feasibility-style review using a local Ollama model when available.
 
 ## Branch / PR status
