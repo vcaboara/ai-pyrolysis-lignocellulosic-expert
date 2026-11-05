@@ -4,9 +4,9 @@
   <a href="https://github.com/vcaboara/ai-pyrolysis-lignocellulosic-expert/actions/workflows/ci.yml">
     <img alt="CI status" src="https://github.com/vcaboara/ai-pyrolysis-lignocellulosic-expert/actions/workflows/ci.yml/badge.svg?branch=main" />
   </a>
+   </br>
+   <small>Note: Badge is pinned to <code>main</code></small>
 </p>
-
-Note: This badge is pinned to `main` because GitHub does not support dynamically selecting the current branch/PR in a plain Markdown badge URL. For branch- or PR-specific status, open the workflow run (Actions / Checks) and see the step summary for the active ref.
 
 This repository provides a small local retrieval-and-answer workflow for pyrolysis and lignocellulosic research questions. It loads local corpus files, builds a TF-IDF index, retrieves relevant chunks, and can answer questions or produce a feasibility-style review using a local Ollama model when available.
 
@@ -19,6 +19,7 @@ This workflow also emits the active ref and event context in the GitHub Actions 
 ## Table of contents
 
 - [Local Pyrolysis and Lignocellulosic RAG](#local-pyrolysis-and-lignocellulosic-rag)
+  - [Branch / PR status](#branch--pr-status)
   - [Table of contents](#table-of-contents)
   - [Repository layout](#repository-layout)
   - [Prerequisites](#prerequisites)
