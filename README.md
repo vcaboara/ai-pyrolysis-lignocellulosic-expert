@@ -1,28 +1,36 @@
 # Local Pyrolysis and Lignocellulosic RAG
 
+<p align="left">
+  <a href="https://github.com/vcaboara/ai-pyrolysis-lignocellulosic-expert/actions/workflows/ci.yml">
+    <img alt="CI status" src="https://github.com/vcaboara/ai-pyrolysis-lignocellulosic-expert/actions/workflows/ci.yml/badge.svg?branch=main" />
+  </a>
+</p>
+
 This repository provides a small local retrieval-and-answer workflow for pyrolysis and lignocellulosic research questions. It loads local corpus files, builds a TF-IDF index, retrieves relevant chunks, and can answer questions or produce a feasibility-style review using a local Ollama model when available.
 
 ## Table of contents
 
-- [Repository layout](#repository-layout)
-- [Prerequisites](#prerequisites)
-- [Basic usage](#basic-usage)
-  - [Build the search index](#build-the-search-index)
-  - [Ask a question](#ask-a-question)
-  - [Run a feasibility pre-review](#run-a-feasibility-pre-review)
-  - [Restrict retrieval to a source type](#restrict-retrieval-to-a-source-type)
-  - [Disable the local LLM and use only retrieved evidence](#disable-the-local-llm-and-use-only-retrieved-evidence)
-  - [Add custom corpora](#add-custom-corpora)
-- [Using run_local_ci.py](#using-run_local_ci.py)
-  - [Run everything](#run-everything)
-  - [Run only selected checks](#run-only-selected-checks)
-  - [What the CI wrapper checks](#what-the-ci-wrapper-checks)
-- [Running the test suite directly](#running-the-test-suite-directly)
-- [Privacy and repo hygiene](#privacy-and-repo-hygiene)
-- [Troubleshooting](#troubleshooting)
-  - [Ollama not responding](#ollama-not-responding)
-  - [Index errors](#index-errors)
-  - [CI failure](#ci-failure)
+- [Local Pyrolysis and Lignocellulosic RAG](#local-pyrolysis-and-lignocellulosic-rag)
+  - [Table of contents](#table-of-contents)
+  - [Repository layout](#repository-layout)
+  - [Prerequisites](#prerequisites)
+  - [Basic usage](#basic-usage)
+    - [Build the search index](#build-the-search-index)
+    - [Ask a question](#ask-a-question)
+    - [Run a feasibility pre-review](#run-a-feasibility-pre-review)
+    - [Restrict retrieval to a source type](#restrict-retrieval-to-a-source-type)
+    - [Disable the local LLM and use only retrieved evidence](#disable-the-local-llm-and-use-only-retrieved-evidence)
+    - [Add custom corpora](#add-custom-corpora)
+  - [Using run\_local\_ci.py](#using-run_local_cipy)
+    - [Run everything](#run-everything)
+    - [Run only selected checks](#run-only-selected-checks)
+    - [What the CI wrapper checks](#what-the-ci-wrapper-checks)
+  - [Running the test suite directly](#running-the-test-suite-directly)
+  - [Privacy and repo hygiene](#privacy-and-repo-hygiene)
+  - [Troubleshooting](#troubleshooting)
+    - [Ollama not responding](#ollama-not-responding)
+    - [Index errors](#index-errors)
+    - [CI failure](#ci-failure)
 
 ## Repository layout
 
