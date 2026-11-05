@@ -20,6 +20,7 @@ RUN python -m pip install --upgrade pip \
 # Files
 COPY pyproject.toml \
     run_local_ci.py \
+    requirements-dev.txt \
     ./
 # Directories
 COPY pyrolysis_lignocellulosic_ai_training ./pyrolysis_lignocellulosic_ai_training
@@ -27,4 +28,4 @@ COPY scripts ./scripts
 COPY tests ./tests
 COPY utils ./utils
 
-CMD ["python", "run_local_ci.py", "--tests", "--security", "--privacy", "--format", "--lint", "--mypy"]
+CMD ["python", "run_local_ci.py", "--tests", "--security", "--deps-audit", "--privacy", "--format", "--lint", "--mypy"]

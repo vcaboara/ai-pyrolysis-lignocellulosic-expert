@@ -148,6 +148,7 @@ The `ci` service mounts your working tree into the container so checks that rely
 ```powershell
 python run_local_ci.py --tests
 python run_local_ci.py --privacy
+python run_local_ci.py --deps-audit
 python run_local_ci.py --format
 python run_local_ci.py --fix-format
 python run_local_ci.py --lint
@@ -168,6 +169,7 @@ These options are useful when you want to focus on a single gate during developm
 
 - Unit tests under `tests/`
 - Bandit security scan
+- pip-audit dependency vulnerability scan
 - Privacy scan for blocked content and private paths
 - Black formatting
 - Ruff linting

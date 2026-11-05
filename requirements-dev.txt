@@ -1,5 +1,6 @@
-black==24.10.0
+black==26.10.1
 ruff==0.7.4
 mypy==1.13.0
 bandit[toml]==1.7.9
+pip-audit==2.7.3
 types-requests==2.32.0.20241016
