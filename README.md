@@ -8,6 +8,12 @@
 
 This repository provides a small local retrieval-and-answer workflow for pyrolysis and lignocellulosic research questions. It loads local corpus files, builds a TF-IDF index, retrieves relevant chunks, and can answer questions or produce a feasibility-style review using a local Ollama model when available.
 
+## Branch / PR status
+
+The badge above is intentionally pinned to the `main` branch so the repository landing page shows the default branch status. GitHub does not inject the current branch or PR name into plain Markdown, so branch-specific status must come from CI-generated badge URLs or workflow summaries.
+
+This workflow also emits the active ref and event context in the GitHub Actions summary so branch pushes and PR runs are clearly labeled while they are running.
+
 ## Table of contents
 
 - [Local Pyrolysis and Lignocellulosic RAG](#local-pyrolysis-and-lignocellulosic-rag)
