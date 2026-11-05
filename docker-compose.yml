@@ -1,4 +1,25 @@
+name: ai-pyrolysis-ligno
+
 services:
+  ci:
+    build:
+      context: .
+      dockerfile: Dockerfile.devsecops
+    working_dir: /workspace
+    command:
+      - python
+      - run_local_ci.py
+      - --tests
+      - --security
+      - --privacy
+      - --format
+      - --lint
+      - --mypy
+    volumes:
+      - .:/workspace
+    profiles:
+      - ci
+
   ollama:
     image: ollama/ollama:latest
     container_name: ollama
