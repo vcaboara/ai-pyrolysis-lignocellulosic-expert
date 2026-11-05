@@ -63,8 +63,7 @@ BINARY_EXTENSIONS = {
 
 def run_git(args: list[str]) -> subprocess.CompletedProcess:
     # Git is invoked with a fixed executable and static args only; no user-controlled shell input is passed.
-    # nosec B603 B607
-    return subprocess.run(["git", *args], cwd=str(ROOT), capture_output=True, text=True)
+    return subprocess.run(["git", *args], cwd=str(ROOT), capture_output=True, text=True)  # nosec B603 B607
 
 
 def is_binary_path(path: Path) -> bool:
@@ -112,8 +111,7 @@ def scan_paths(paths: list[Path]) -> list[str]:
         p = path.as_posix()
         for rx in patterns:
             if rx.search(p):
-                violations.append(
-                    f"blocked path pattern '{rx.pattern}' matched: {p}")
+                violations.append(f"blocked path pattern '{rx.pattern}' matched: {p}")
     return violations
 
 
@@ -122,8 +120,7 @@ def scan_text(path: Path, text: str) -> list[str]:
     lowered = text.lower()
     for rx in blocked_patterns():
         if rx.search(lowered):
-            violations.append(
-                f"blocked content pattern '{rx.pattern}' matched in: {path.as_posix()}")
+            violations.append(f"blocked content pattern '{rx.pattern}' matched in: {path.as_posix()}")
     return violations
 
 
@@ -132,8 +129,7 @@ def scan(files: list[Path], from_staged: bool) -> list[str]:
     for path in files:
         if is_binary_path(path):
             continue
-        text = read_staged_text(
-            path) if from_staged else read_worktree_text(path)
+        text = read_staged_text(path) if from_staged else read_worktree_text(path)
         if not text:
             continue
         violations.extend(scan_text(path, text))
@@ -146,12 +142,9 @@ def scan_commit_message(msg_file: Path) -> list[str]:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Privacy guard for blocked terms/paths before commit")
-    parser.add_argument("--scan-all", action="store_true",
-                        help="Scan all tracked files in the working tree")
-    parser.add_argument("--commit-msg-file",
-                        help="Commit message file path (for commit-msg hook)")
+    parser = argparse.ArgumentParser(description="Privacy guard for blocked terms/paths before commit")
+    parser.add_argument("--scan-all", action="store_true", help="Scan all tracked files in the working tree")
+    parser.add_argument("--commit-msg-file", help="Commit message file path (for commit-msg hook)")
     return parser.parse_args()
 
 
