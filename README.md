@@ -4,9 +4,9 @@
   <a href="https://github.com/vcaboara/ai-pyrolysis-lignocellulosic-expert/actions/workflows/ci.yml">
     <img alt="CI status" src="https://github.com/vcaboara/ai-pyrolysis-lignocellulosic-expert/actions/workflows/ci.yml/badge.svg?branch=main" />
   </a>
+   </br>
+   <small>Note: Badge is pinned to <code>main</code></small>
 </p>
-
-Note: This badge is pinned to `main` because GitHub does not support dynamically selecting the current branch/PR in a plain Markdown badge URL. For branch- or PR-specific status, open the workflow run (Actions / Checks) and see the step summary for the active ref.
 
 This repository provides a small local retrieval-and-answer workflow for pyrolysis and lignocellulosic research questions. It loads local corpus files, builds a TF-IDF index, retrieves relevant chunks, and can answer questions or produce a feasibility-style review using a local Ollama model when available.
 
@@ -19,6 +19,7 @@ This workflow also emits the active ref and event context in the GitHub Actions 
 ## Table of contents
 
 - [Local Pyrolysis and Lignocellulosic RAG](#local-pyrolysis-and-lignocellulosic-rag)
+  - [Branch / PR status](#branch--pr-status)
   - [Table of contents](#table-of-contents)
   - [Repository layout](#repository-layout)
   - [Prerequisites](#prerequisites)
@@ -31,6 +32,7 @@ This workflow also emits the active ref and event context in the GitHub Actions 
     - [Add custom corpora](#add-custom-corpora)
   - [Using run\_local\_ci.py](#using-run_local_cipy)
     - [Run everything](#run-everything)
+    - [Run the same quality gate in a container](#run-the-same-quality-gate-in-a-container)
     - [Run only selected checks](#run-only-selected-checks)
     - [What the CI wrapper checks](#what-the-ci-wrapper-checks)
   - [Running the test suite directly](#running-the-test-suite-directly)
@@ -126,6 +128,21 @@ You can pass `--corpus` multiple times to include additional JSONL files.
 python run_local_ci.py --all
 ```
 
+### Run the same quality gate in a container
+
+```powershell
+docker compose --profile ci build ci
+docker compose --profile ci up --abort-on-container-exit --exit-code-from ci --no-build ci
+```
+
+After the run, clean up the compose-managed container, network, and the local CI image:
+
+```powershell
+docker compose --profile ci down --rmi local --volumes --remove-orphans
+```
+
+The `ci` service mounts your working tree into the container so checks that rely on Git metadata (such as `privacy_guard.py`) run against a real repository.
+
 ### Run only selected checks
 
 ```powershell
@@ -150,6 +167,7 @@ These options are useful when you want to focus on a single gate during developm
 ### What the CI wrapper checks
 
 - Unit tests under `tests/`
+- Bandit security scan
 - Privacy scan for blocked content and private paths
 - Black formatting
 - Ruff linting
