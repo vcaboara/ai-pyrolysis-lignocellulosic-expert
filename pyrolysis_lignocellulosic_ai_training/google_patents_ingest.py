@@ -13,10 +13,14 @@ DEFAULT_QUERY_URLS = [
     "https://patents.google.com/?q=(pyrolysis;+lignocellulosic)&oq=pyrolysis;+lignocellulosic",
 ]
 
+WHITESPACE_RE = re.compile(r"\s+")
+SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+")
+PATENT_CODE_RE = re.compile(r"\b(?:US|WO|EP|CN|JP|KR|CA|RU|AU)\d{5,12}[A-Z]?\d?\b")
+
 
 def normalize_whitespace(text: str) -> str:
     """Normalize whitespace by collapsing consecutive spaces into one and trimming."""
-    text = re.sub(r"\s+", " ", text)
+    text = WHITESPACE_RE.sub(" ", text)
     return text.strip()
 
 
@@ -60,7 +64,7 @@ def collapse_repeated_token_spans(text: str, min_span_tokens: int = 10, max_span
 
 def dedupe_consecutive_sentences(text: str) -> str:
     """Remove consecutive duplicate sentences from the text."""
-    parts = re.split(r"(?<=[.!?])\s+", text)
+    parts = SENTENCE_SPLIT_RE.split(text)
     cleaned: list[str] = []
     prev_norm = ""
     for part in parts:
@@ -100,10 +104,9 @@ def chunk_text(text: str, max_chars: int = 2200, overlap: int = 220) -> list[str
 
 def extract_patent_codes(text: str) -> list[str]:
     """Extract codes from common granted or published patent formats."""
-    rx = re.compile(r"\b(?:US|WO|EP|CN|JP|KR|CA|RU|AU)\d{5,12}[A-Z]?\d?\b")
     seen = set()
     out = []
-    for m in rx.findall(text):
+    for m in PATENT_CODE_RE.findall(text):
         if m not in seen:
             seen.add(m)
             out.append(m)
