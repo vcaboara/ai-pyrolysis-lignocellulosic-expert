@@ -230,6 +230,9 @@ class RunLocalCiCliTests(unittest.TestCase):
             dep_audit_called = True
             return 0
 
+        def fake_run_image_scan():
+            return 0
+
         def fake_run_compose():
             return 0
 
@@ -244,6 +247,7 @@ class RunLocalCiCliTests(unittest.TestCase):
             mock.patch.object(run_local_ci, "run_lint", side_effect=fake_run_lint),
             mock.patch.object(run_local_ci, "run_mypy", side_effect=fake_run_mypy),
             mock.patch.object(run_local_ci, "run_deps_audit", side_effect=fake_run_deps_audit),
+            mock.patch.object(run_local_ci, "run_image_scan", side_effect=fake_run_image_scan),
             mock.patch.object(run_local_ci, "run_compose_check", side_effect=fake_run_compose),
         ):
             exit_code = run_local_ci.main_for_tests(["--all"])
