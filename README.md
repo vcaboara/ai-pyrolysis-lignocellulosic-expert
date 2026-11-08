@@ -221,6 +221,7 @@ Check that Docker is running and the service is up:
 
 ```powershell
 $env:COMPOSE_FILE = "docker/docker-compose.yml"
+$env:COMPOSE_PROFILES = "ci"
 docker compose ps
 curl http://localhost:11434
 ```
