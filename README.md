@@ -204,7 +204,7 @@ This runs the project’s test collection without the additional quality-gate wr
 
 ## Project structure
 
-- `docker/` - Docker configuration files (Dockerfile.devsecops, docker-compose.yml, .dockerignore)
+- `docker/` - Docker configuration files (Dockerfile, docker-compose.yml, .dockerignore)
 - `results/` - Security scan outputs and reports (not committed to git)
 - `tests/` - Unit tests
 - `scripts/` - Utility scripts
