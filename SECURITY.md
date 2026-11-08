@@ -2,7 +2,9 @@
 
 ## Overview
 
-This project implements a comprehensive DevSecOps pipeline to automatically detect vulnerabilities in code, dependencies, and container images. This document describes our security approach, findings, and remediation strategy.
+This project implements a comprehensive DevSecOps pipeline to automatically detect vulnerabilities in code,
+dependencies, and container images. This document describes our security approach, findings, and remediation
+strategy.
 
 ## Base Image: python:3.13-alpine (Selected: Option 1)
 
@@ -17,13 +19,17 @@ We use `python:3.13-alpine` as our base image. This decision prioritizes:
 ### Alternative Options Considered
 
 - **1 - Alpine (SELECTED)**
-- Image: `python:3.13-alpine`; size: ~180MB; vulnerabilities: lower baseline; trade-off: musl differences vs glibc.
+- Image: `python:3.13-alpine`; size: ~180MB; vulnerabilities: lower baseline; trade-off: musl differences
+   vs glibc.
 - **2 - Distroless**
-- Image: `gcr.io/distroless/python3-debian12`; size: ~150MB; vulnerabilities: minimal; trade-off: no shell, harder to debug.
+- Image: `gcr.io/distroless/python3-debian12`; size: ~150MB; vulnerabilities: minimal; trade-off: no shell,
+   harder to debug.
 - **3 - Slim**
-- Image: `python:3.13-slim`; size: ~400MB; vulnerabilities: higher baseline; trade-off: familiar Debian ecosystem, larger footprint.
+- Image: `python:3.13-slim`; size: ~400MB; vulnerabilities: higher baseline; trade-off: familiar Debian
+   ecosystem, larger footprint.
 - **4 - Custom Minimal**
-- Image: custom hardened image; size: variable; vulnerabilities: variable; trade-off: time-intensive, higher maintenance overhead.
+- Image: custom hardened image; size: variable; vulnerabilities: variable; trade-off: time-intensive,
+   higher maintenance overhead.
 
 ## Vulnerability Findings
 
@@ -36,7 +42,8 @@ We use `python:3.13-alpine` as our base image. This decision prioritizes:
 Vulnerability counts vary over time as upstream Alpine and package feeds change.
 Do not treat a static number in this document as authoritative; use the latest Trivy output from the current run.
 
-If scan artifacts are generated locally, review `results/TRIVY_FINDINGS_SUMMARY.md` (when present) for that run's details.
+If scan artifacts are generated locally, review `results/TRIVY_FINDINGS_SUMMARY.md` (when present)
+for that run's details.
 
 ### Python Dependency Vulnerabilities
 
@@ -56,7 +63,8 @@ All pass in current CI pipeline.
 
 ## Risk Acceptance
 
-We acknowledge that OS-level vulnerabilities can still appear in Alpine-based images and are managed via continuous scanning because:
+We acknowledge that OS-level vulnerabilities can still appear in Alpine-based images and are managed via
+continuous scanning because:
 
 1. **Use Case**: This is a development/CI tool, not a production user-facing service
 2. **Defense in Depth**: Vulnerabilities are monitored and reported in every CI run
