@@ -68,7 +68,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /workspace
 
 # Install minimal OS dependencies: git (for privacy_guard), ca-certificates (for HTTPS)
-RUN apk add --no-cache git ca-certificates
+RUN apk add --no-cache git ca-certificates openblas libstdc++ libgfortran
 
 # Copy ONLY runtime packages (not dev tools like black, ruff, bandit, mypy)
 COPY --from=builder /runtime-deps /usr/local/lib/python3.13/site-packages
