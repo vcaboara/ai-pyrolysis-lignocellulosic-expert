@@ -1,27 +1,47 @@
-# Repository Agent Guidelines
+# AGENTS.md
 
-## Workflow
+This file defines how AI coding agents should work in this repository.
 
-- Work in small, reviewable chunks and pause for user confirmation between larger changes.
-- Prefer minimal, targeted edits over broad refactors.
-- Do not run destructive git commands unless the user explicitly requests them.
-- When debugging, report the first failing step and the exact failure line.
+## Collaboration style (required)
 
-## Docker and CI
+- Work in small chunks.
+- After each meaningful chunk, pause and check in before continuing.
+- Prioritize teaching over just fixing: explain what changed, why, and how to debug similar issues.
+- Share failures and first error lines clearly, then explain the root cause and next step.
+- Avoid long chains of actions without intermediate updates.
+
+## Preferred execution flow
+
+For most tasks, use this loop:
+
+1. Propose the next small step in 1-2 sentences.
+2. Run only that step.
+3. Report result (pass/fail, key output, first error if any).
+4. Explain what it means.
+5. Ask whether to continue to the next step.
+
+## Git and PR workflow
+
+- Never do feature work on `main`.
+- Create or switch to a task branch before any edits, commits, rebases, or pushes.
+- Treat `main` as protected: no direct commits, no rebases, no resets.
+- Before commit/push, summarize staged changes in plain language.
+- If push/PR fails, stop and explain the exact blocker before trying larger recovery actions.
+- Do not rewrite history without explicit approval.
+- Do not force push without explicit approval in the current session.
+- If history cleanup seems necessary, propose options and wait for user confirmation before executing.
+
+## CI / Docker notes for this repo
 
 - Canonical compose file: `docker/docker-compose.yml`.
-- CI profile commands should use `docker compose -f docker/docker-compose.yml --profile ci ...`.
-- Treat local runtime images as build artifacts, not pull-only dependencies.
+- Preferred env defaults:
+  - `COMPOSE_FILE=docker/docker-compose.yml`
+  - `COMPOSE_PROFILES=ci`
+- Build-stage CI gates run in Docker build (`builder` target).
+- Runtime privacy check is intended to run with mounted workspace context.
 
-## Documentation Standards
+## Communication format
 
-- Hard-wrap Markdown prose at 120 characters maximum.
-- Keep list items and long bullets wrapped to 120 characters as well.
-- Prefer concise sections and actionable wording.
-- When updating existing docs, preserve headings and intent while enforcing line-length limits.
-
-## Quality Expectations
-
-- Validate changed commands when practical.
-- Keep changes scoped to the request.
-- If assumptions are required, state them clearly in the final summary.
+- Keep updates concise and frequent.
+- Include exact command used and exit code when relevant.
+- If a command is interactive or risky, explain and ask first.
