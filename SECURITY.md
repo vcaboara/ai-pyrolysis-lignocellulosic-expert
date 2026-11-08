@@ -4,42 +4,39 @@
 
 This project implements a comprehensive DevSecOps pipeline to automatically detect vulnerabilities in code, dependencies, and container images. This document describes our security approach, findings, and remediation strategy.
 
-## Base Image: python:3.13-slim (Selected: Option 3)
+## Base Image: python:3.13-alpine (Selected: Option 1)
 
 ### Decision Rationale
 
-We use `python:3.13-slim` based on Debian 13.7 as our base image. This decision prioritizes:
+We use `python:3.13-alpine` as our base image. This decision prioritizes:
 
-1. **Maintainability**: Familiar Debian ecosystem with extensive documentation and library support
-2. **Learning**: Allows understanding of real-world security tradeoffs without introducing Alpine complexity (musl vs glibc)
-3. **Pragmatism**: For a development/AI tool, Slim's larger attack surface is acceptable given monitoring via automated scanning
+1. **Reduced attack surface**: Smaller base image and fewer OS packages by default
+2. **Security-first defaults**: Lower baseline vulnerability exposure for local CI/runtime images
+3. **Pragmatism**: Works for this project while still allowing reproducible security scanning in CI
 
 ### Alternative Options Considered
 
-| Option                  | Image                          | Size     | Vulnerabilities  | Trade-offs                        |
-| ----------------------- | ------------------------------ | -------- | ---------------- | --------------------------------- |
-| 1 - Alpine              | `python:3.13-alpine`           | ~180MB   | Fewer            | Requires musl, different behavior |
-| 2 - Distroless          | `gcr.io/distroless/python3.13` | ~150MB   | Minimal          | No shell, difficult to debug      |
-| **3 - Slim (SELECTED)** | `python:3.13-slim`             | ~400MB   | 58 HIGH/CRITICAL | Well-known, good library support  |
-| 4 - Custom Minimal      | Custom slim + removals         | Variable | Variable         | Time-intensive, fragile           |
+- **1 - Alpine (SELECTED)**
+- Image: `python:3.13-alpine`; size: ~180MB; vulnerabilities: lower baseline; trade-off: musl differences vs glibc.
+- **2 - Distroless**
+- Image: `gcr.io/distroless/python3-debian12`; size: ~150MB; vulnerabilities: minimal; trade-off: no shell, harder to debug.
+- **3 - Slim**
+- Image: `python:3.13-slim`; size: ~400MB; vulnerabilities: higher baseline; trade-off: familiar Debian ecosystem, larger footprint.
+- **4 - Custom Minimal**
+- Image: custom hardened image; size: variable; vulnerabilities: variable; trade-off: time-intensive, higher maintenance overhead.
 
 ## Vulnerability Findings
 
 ### Trivy Container Image Scan Results
 
-**Scan Date**: 2026-11-06  
-**Tool**: Trivy v0.76.2  
-**Total HIGH/CRITICAL Vulnerabilities**: 58
+**Scan Date**: Rolling (per CI/local run)
+**Tool**: Trivy v0.76.2 (or newer)
+**Scope**: `ai-pyrolysis-ligno:runtime` image built from `python:3.13-alpine`
 
-#### Summary by Package
+Vulnerability counts vary over time as upstream Alpine and package feeds change.
+Do not treat a static number in this document as authoritative; use the latest Trivy output from the current run.
 
-- **util-linux** (4 CVEs): CVE-2026-76642, CVE-2026-78408, CVE-2026-78409, CVE-2026-78410
-- **libexpat1** (4 CVEs): CVE-2026-113351, CVE-2026-115506, CVE-2026-117610, CVE-2026-118370
-- **curl** (2 CVEs): CVE-2026-12064, CVE-2026-8458
-- **libacl1** (1 CVE): CVE-2026-54369
-- **Plus 47 more** across libgcrypt20, libgmp10, libcap2, libpam0g, libssl3, openssh-client, etc.
-
-See [results/TRIVY_FINDINGS_SUMMARY.md](results/TRIVY_FINDINGS_SUMMARY.md) for detailed vulnerability list.
+If scan artifacts are generated locally, review `results/TRIVY_FINDINGS_SUMMARY.md` (when present) for that run's details.
 
 ### Python Dependency Vulnerabilities
 
@@ -50,6 +47,7 @@ Checked via `pip-audit` in the CI pipeline. All direct and transitive dependenci
 ### Code-Level Vulnerabilities
 
 Checked via:
+
 - **Bandit**: SAST scanner for Python code
 - **Privacy Guard**: Secrets/PII detection
 - **Ruff**: Linting and safety checks
@@ -58,7 +56,7 @@ All pass in current CI pipeline.
 
 ## Risk Acceptance
 
-We acknowledge and accept the 58 HIGH/CRITICAL vulnerabilities in the Debian base image because:
+We acknowledge that OS-level vulnerabilities can still appear in Alpine-based images and are managed via continuous scanning because:
 
 1. **Use Case**: This is a development/CI tool, not a production user-facing service
 2. **Defense in Depth**: Vulnerabilities are monitored and reported in every CI run
@@ -82,10 +80,10 @@ We acknowledge and accept the 58 HIGH/CRITICAL vulnerabilities in the Debian bas
 
 ### 3. Upgrade Strategy
 
-- Python 3.13-slim patches applied via upstream updates
-- Subscribe to Debian security advisories for libssl3, openssh-client, curl, expat
+- Track `python:3.13-alpine` upstream updates and rebuild regularly
+- Subscribe to Alpine security advisories and Trivy database updates
 - Rebuild image monthly or on critical CVE announcements
-- Test Alpine/Distroless alternatives if Debian vulnerabilities increase significantly
+- Re-evaluate Distroless or further hardening if vulnerability trend worsens
 
 ### 4. Incident Response
 
@@ -128,13 +126,14 @@ docker compose --profile ci up
 
 If this project moves to production (e.g., as a service):
 
-1. **Immediately switch to Alpine** (Option 1)
-   - Reduce attack surface from 58 to ~10 vulnerabilities
-   - Trade-off: Test library compatibility with musl
+1. **Keep Alpine and tighten hardening**
+   - Pin image digests
+   - Reduce installed packages to strict minimum
+   - Enforce regular rebuild cadence
 
-2. **Or use Distroless** (Option 2)
-   - Maximum hardening: no shell, no package manager
-   - Trade-off: Harder to debug, limited OS tools
+2. **Consider Distroless** for maximum hardening
+   - No shell/package manager in runtime
+   - Trade-off: harder debugging and operational tooling
 
 3. **Implement WAF/IDS** if exposed to untrusted input
 
@@ -145,7 +144,7 @@ If this project moves to production (e.g., as a service):
 - [ ] Create `ACCEPTED_RISKS.md` documenting known unfixed vulnerabilities
 - [ ] Set up GitHub Actions alerts for new CVEs in base image
 - [ ] Evaluate commercial image scanning (e.g., Snyk, Anchore)
-- [ ] Performance testing: Alpine vs Slim cold start time
+- [ ] Performance testing: Alpine vs Distroless cold start time
 - [ ] Document emergency response procedure for CVSS 9.0+ CVEs
 
 ## References

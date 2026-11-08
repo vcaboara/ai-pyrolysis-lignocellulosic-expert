@@ -58,6 +58,7 @@ def ensure_container_running() -> None:
             "docker compose -f docker/docker-compose.yml up -d ollama"
         )
 
+
 def action_up(args: list[str]) -> int:
     return cmd_compose(["up", "-d", *args])
 
