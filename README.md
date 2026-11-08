@@ -73,7 +73,7 @@ If you want the local model runtime enabled, set the compose file once in the cu
 
 ```powershell
 $env:COMPOSE_FILE = "docker/docker-compose.yml"
-$env:COMPOSE_PROFILE = "ci"
+$env:COMPOSE_PROFILES = "ci"
 docker compose up -d
 ```
 
