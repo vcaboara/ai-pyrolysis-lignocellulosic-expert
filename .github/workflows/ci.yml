@@ -11,6 +11,8 @@ on:
 jobs:
   quality:
     runs-on: ubuntu-latest
+    env:
+      COMPOSE_FILE: docker/docker-compose.yml
 
     steps:
       - name: Report branch or PR context

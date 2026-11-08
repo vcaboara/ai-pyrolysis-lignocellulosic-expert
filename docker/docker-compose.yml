@@ -1,0 +1,68 @@
+name: ai-pyrolysis-ligno
+
+services:
+  ci:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.devsecops
+      target: builder
+    working_dir: /workspace
+    # Uses builder CMD to run privacy scan on mounted host workspace.
+    # Other quality gates run during Docker image build in Dockerfile.devsecops.
+    volumes:
+      - ..:/workspace
+    profiles:
+      - ci
+
+  runtime:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.devsecops
+      target: runtime
+    image: ai-pyrolysis-ligno:runtime
+    working_dir: /workspace
+    profiles:
+      - ci
+    # Note: This service builds but doesn't run; used for image scanning below
+
+  trivy:
+    image: ghcr.io/aquasecurity/trivy:0.76.2
+    entrypoint: trivy
+    command:
+      - image
+      - --exit-code=1
+      - --severity=HIGH,CRITICAL
+      - --progress-spinner=off
+      - ai-pyrolysis-ligno:runtime
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    profiles:
+      - ci
+
+  ollama:
+    image: ollama/ollama:0.3.12
+    container_name: ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    restart: unless-stopped
+    depends_on:
+      - ollama
+    environment:
+      OLLAMA_BASE_URL: http://ollama:11434
+    ports:
+      - "3000:8080"
+    volumes:
+      - open_webui_data:/app/backend/data
+    profiles:
+      - ui
+
+volumes:
+  ollama_data:
+  open_webui_data:

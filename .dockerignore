@@ -1,0 +1,54 @@
+# Version control
+.git
+.githooks
+.gitignore
+
+# Development tools
+.vscode
+.vscode-server
+
+# Virtual environment
+venv/
+.local_private/
+
+# Python cache and build artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Testing artifacts
+.coverage
+htmlcov/
+.tox/
+
+# Local development
+.env
+.env.local
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Trivy scan results (run in CI container, not needed in image)
+results/
+trivy-results.txt
+trivy-clean.txt
+
+# Documentation and large files
+*.md
+docs/
+
+# Tools directory with scripts/binaries
+tools/
+
+# Vortex installer (legacy, not part of CI)
+vortex_installer/
+
+# Open WebUI/Ollama volumes (development only)
+ollama_data/
