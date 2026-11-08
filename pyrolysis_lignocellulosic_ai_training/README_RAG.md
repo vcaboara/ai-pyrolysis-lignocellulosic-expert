@@ -121,6 +121,7 @@ Any non-command line is treated as your question.
 
 ```powershell
 $env:COMPOSE_FILE = "docker/docker-compose.yml"
+$env:COMPOSE_PROFILES = "ci"
 
 # start Ollama only
 docker compose up -d ollama

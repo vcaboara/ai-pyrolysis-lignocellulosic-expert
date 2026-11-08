@@ -36,7 +36,6 @@ services:
       - ai-pyrolysis-ligno:runtime
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-    # Trivy scans the built image; no runtime container dependency required.
     profiles:
       - ci
 
