@@ -4,11 +4,11 @@ services:
   ci:
     build:
       context: ..
-      dockerfile: docker/Dockerfile.devsecops
+      dockerfile: docker/Dockerfile
       target: builder
     working_dir: /workspace
     # Uses builder CMD to run privacy scan on mounted host workspace.
-    # Other quality gates run during Docker image build in Dockerfile.devsecops.
+    # Other quality gates run during Docker image build in Dockerfile.
     volumes:
       - ..:/workspace
     profiles:
@@ -17,7 +17,7 @@ services:
   runtime:
     build:
       context: ..
-      dockerfile: docker/Dockerfile.devsecops
+      dockerfile: docker/Dockerfile
       target: runtime
     image: ai-pyrolysis-ligno:runtime
     working_dir: /workspace

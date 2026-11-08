@@ -2,14 +2,24 @@
 # STAGE 1: Builder (python:3.13-alpine)
 # Purpose: Full CI environment - compile deps, run all tests/checks
 # ============================================================================
-FROM python:3.13-alpine AS builder
+FROM python:3.13-alpine AS minimum
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 WORKDIR /workspace
 
-# Install build dependencies AND git (required for privacy_guard to scan git metadata)
+# Install minimal OS dependencies: git (for privacy_guard), ca-certificates (for HTTPS)
+RUN apk add --no-cache \
+    git \
+    ca-certificates \
+    openblas \
+    libstdc++ \
+    libgfortran && \
+    python -m pip install --upgrade pip
+
+FROM minimum AS builder
+# Install build dependencies
 # For scikit-learn with Meson build: use build-base (includes gcc, g++, make, libc-dev)
 # plus python3-dev, gfortran, openblas-dev for scientific packages
 RUN apk add --no-cache \
@@ -18,8 +28,8 @@ RUN apk add --no-cache \
     python3-dev \
     gfortran \
     openblas-dev \
-    git ca-certificates && \
-    python -m pip install --upgrade pip setuptools wheel
+    && \
+    python -m pip install --upgrade setuptools wheel
 
 # Diagnostic: Verify C++ compiler (key for scikit-learn Meson builds)
 RUN echo "=== Compiler Verification ===" && \
@@ -60,15 +70,12 @@ CMD ["python", "run_local_ci.py", "--privacy"]
 # Purpose: Minimal image with only requirements.txt (no dev tools)
 # Alpine base gives ~50% smaller image and fewer OS-level vulnerabilities
 # ============================================================================
-FROM python:3.13-alpine AS runtime
+FROM minimum AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 WORKDIR /workspace
-
-# Install minimal OS dependencies: git (for privacy_guard), ca-certificates (for HTTPS)
-RUN apk add --no-cache git ca-certificates openblas libstdc++ libgfortran
 
 # Copy ONLY runtime packages (not dev tools like black, ruff, bandit, mypy)
 COPY --from=builder /runtime-deps /usr/local/lib/python3.13/site-packages
