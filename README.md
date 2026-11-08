@@ -12,7 +12,7 @@ This repository provides a small local retrieval-and-answer workflow for pyrolys
 
 ## Branch / PR status
 
-The badge above is intentionally pinned to the `main` branch so the repository landing page shows the default branch status. GitHub does not inject the current branch or PR name into plain Markdown, so branch-specific status must come from CI-generated badge URLs or workflow summaries.
+The badge above is intentionally pinned to the `main` branch so the repository landing page shows the default branch status.
 
 This workflow also emits the active ref and event context in the GitHub Actions summary so branch pushes and PR runs are clearly labeled while they are running.
 
@@ -37,6 +37,7 @@ This workflow also emits the active ref and event context in the GitHub Actions 
     - [What the CI wrapper checks](#what-the-ci-wrapper-checks)
   - [Running the test suite directly](#running-the-test-suite-directly)
   - [Privacy and repo hygiene](#privacy-and-repo-hygiene)
+  - [Project structure](#project-structure)
   - [Troubleshooting](#troubleshooting)
     - [Ollama not responding](#ollama-not-responding)
     - [Index errors](#index-errors)
@@ -49,7 +50,7 @@ This workflow also emits the active ref and event context in the GitHub Actions 
 - `tests/test_local_rag.py` — unit tests for the local retrieval and indexing helpers
 - `scripts/privacy_guard.py` — repo privacy scan for sensitive content and blocked paths
 - `run_local_ci.py` — local quality gate wrapper used to mirror CI checks
-- `docker-compose.yml` — local Ollama service definition
+- `docker/docker-compose.yml` — local Ollama and CI service definition
 - `.local_private/` — local-only private files excluded from the public repo
 
 ## Prerequisites
@@ -61,20 +62,24 @@ This workflow also emits the active ref and event context in the GitHub Actions 
 Recommended setup:
 
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
+python -m venv venv
+.\venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 pip install scikit-learn joblib requests
 pip install -r requirements-dev.txt
 ```
 
-If you want the local model runtime enabled, start the container:
+If you want the local model runtime enabled, set the compose file once in the current shell and start the container (or execute other commands):
 
 ```powershell
+$env:COMPOSE_FILE = "docker/docker-compose.yml"
+$env:COMPOSE_PROFILES = "ci"
 docker compose up -d
 ```
 
-The Docker Compose file exposes Ollama on port `11434`.
+For a persistent setup across shells, use a repo-local `.env` (see `.env.example`).
+
+The Docker Compose file (in `docker/` folder) exposes Ollama on port `11434`.
 
 ## Basic usage
 
@@ -130,7 +135,11 @@ python run_local_ci.py --all
 
 ### Run the same quality gate in a container
 
+Set the compose file once in the shell and then run the CI service normally:
+
 ```powershell
+$env:COMPOSE_FILE = "docker/docker-compose.yml"
+$env:COMPOSE_PROFILES = "ci"
 docker compose --profile ci build ci
 docker compose --profile ci up --abort-on-container-exit --exit-code-from ci --no-build ci
 ```
@@ -146,14 +155,16 @@ The `ci` service mounts your working tree into the container so checks that rely
 ### Run only selected checks
 
 ```powershell
-python run_local_ci.py --tests
-python run_local_ci.py --privacy
-python run_local_ci.py --deps-audit
-python run_local_ci.py --format
-python run_local_ci.py --fix-format
-python run_local_ci.py --lint
-python run_local_ci.py --mypy
-python run_local_ci.py --compose
+python run_local_ci.py --format              # Black formatter (check only)
+python run_local_ci.py --fix-format          # Black formatter (fix files in place)
+python run_local_ci.py --lint                # Ruff linter
+python run_local_ci.py --mypy                # Type checker
+python run_local_ci.py --tests               # Unit tests
+python run_local_ci.py --security            # Bandit SAST scan
+python run_local_ci.py --deps-audit          # Dependency vulnerability audit
+python run_local_ci.py --image-scan          # Container image vulnerability scan
+python run_local_ci.py --privacy             # Privacy/secrets scan
+python run_local_ci.py --compose             # Docker Compose validation
 ```
 
 The `--format` flag performs a check-only Black run. Use `--fix-format` to rewrite files in place, or run Black directly:
@@ -170,6 +181,7 @@ These options are useful when you want to focus on a single gate during developm
 - Unit tests under `tests/`
 - Bandit security scan
 - pip-audit dependency vulnerability scan
+- Trivy container image security scan
 - Privacy scan for blocked content and private paths
 - Black formatting
 - Ruff linting
@@ -190,6 +202,17 @@ This runs the project’s test collection without the additional quality-gate wr
 - Use `.local_private/` for local-only content that must not be committed.
 - Run the privacy scan before committing or opening a PR.
 
+## Project structure
+
+- `docker/` - Docker configuration files (Dockerfile.devsecops, docker-compose.yml, .dockerignore)
+- `results/` - Security scan outputs and reports (not committed to git)
+- `tests/` - Unit tests
+- `scripts/` - Utility scripts
+- `utils/` - Python utility modules
+- `pyrolysis_lignocellulosic_ai_training/` - Main application package
+
+For security policy, vulnerability findings, and risk assessment, see [SECURITY.md](SECURITY.md).
+
 ## Troubleshooting
 
 ### Ollama not responding
@@ -197,6 +220,8 @@ This runs the project’s test collection without the additional quality-gate wr
 Check that Docker is running and the service is up:
 
 ```powershell
+$env:COMPOSE_FILE = "docker/docker-compose.yml"
+$env:COMPOSE_PROFILES = "ci"
 docker compose ps
 curl http://localhost:11434
 ```
@@ -218,3 +243,11 @@ python run_local_ci.py --all
 ```
 
 This surfaces the same kinds of issues that GitHub Actions will catch before a PR is merged.
+
+If the Docker build fails during the Black formatting check, that is expected behavior: the builder stage runs `python run_local_ci.py --tests --security --deps-audit --format --lint --mypy`, and Black is part of that gate. Fix the files it reports, or run:
+
+```powershell
+python run_local_ci.py --fix-format
+```
+
+before rebuilding the CI image.

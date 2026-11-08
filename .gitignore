@@ -25,3 +25,11 @@ help.txt
 .local_private/
 pyrolysis_lignocellulosic_ai_training/private_site_corpus/
 pyrolysis_lignocellulosic_ai_training/private_site_builder.py
+
+# Security scan results and Docker build artifacts
+results/
+
+# Local Configurations
+.env
+**/.env
+tools/

@@ -21,9 +21,11 @@ Commands:
 - `list` lists installed Ollama models
 - `status` prints compose status and installed models
 
-You can also use the Docker Compose file directly:
+Set the environment once and then use the native Docker Compose commands cleanly:
 
 ```powershell
+$env:COMPOSE_FILE = "docker/docker-compose.yml"
+$env:COMPOSE_PROFILES = "ci"
 docker compose up -d ollama
 docker compose exec ollama ollama pull llama3.1:8b
 docker compose --profile ui up -d

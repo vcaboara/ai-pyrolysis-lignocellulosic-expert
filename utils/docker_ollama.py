@@ -1,4 +1,5 @@
 import argparse
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -15,9 +16,12 @@ def run(cmd: list[str], check: bool = True, capture: bool = True) -> subprocess.
 
 def ensure_compose_file() -> Path:
     root = Path(__file__).resolve().parent.parent
-    compose = root / "docker-compose.yml"
+    env_path = os.environ.get("COMPOSE_FILE")
+    compose = Path(env_path).expanduser() if env_path else root / "docker" / "docker-compose.yml"
+    if not compose.is_absolute():
+        compose = (root / compose).resolve()
     if not compose.exists():
-        raise FileNotFoundError(f"Missing docker-compose.yml at {compose}")
+        raise FileNotFoundError(f"Missing docker compose file at {compose}")
     return compose
 
 
@@ -49,7 +53,10 @@ def ensure_container_running() -> None:
     if status.returncode != 0:
         raise RuntimeError("Docker is unavailable or not running.")
     if not status.stdout.strip():
-        raise RuntimeError("Ollama container is not running. Start it with: docker compose up -d ollama")
+        raise RuntimeError(
+            "Ollama container is not running. Start it with: "
+            "docker compose -f docker/docker-compose.yml up -d ollama"
+        )
 
 
 def action_up(args: list[str]) -> int:

@@ -1,4 +1,5 @@
 import argparse
+import os
 import shutil
 import subprocess
 import sys
@@ -38,6 +39,7 @@ def add_common_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--mypy", action="store_true", help="Run mypy static analysis")
     parser.add_argument("--security", action="store_true", help="Run Bandit security scan")
     parser.add_argument("--deps-audit", action="store_true", help="Run pip-audit dependency vulnerability scan")
+    parser.add_argument("--image-scan", action="store_true", help="Run Trivy container image security scan")
     parser.add_argument("--tests", action="store_true", help="Run unit tests")
     parser.add_argument("--privacy", action="store_true", help="Run privacy content/path scan")
     parser.add_argument("--compose", action="store_true", help="Validate Docker Compose config")
@@ -94,12 +96,31 @@ def run_privacy_scan() -> int:
     return run_step("Privacy scan", [sys.executable, "scripts/privacy_guard.py", "--scan-all"])
 
 
+def compose_command(*args: str) -> list[str]:
+    compose_file = os.environ.get("COMPOSE_FILE")
+    if not compose_file:
+        compose_file = str((ROOT / "docker" / "docker-compose.yml").resolve())
+    cmd = ["docker", "compose", "-f", compose_file, *args]
+    return cmd
+
+
 def run_compose_check() -> int:
     docker_path = shutil.which("docker")
     if not docker_path:
         print("\nDocker CLI not found; skipping compose validation.")
         return 0
-    return run_step("Compose validation", ["docker", "compose", "-f", "docker-compose.yml", "config"])
+    return run_step("Compose validation", compose_command("config"))
+
+
+def run_image_scan() -> int:
+    docker_path = shutil.which("docker")
+    if not docker_path:
+        print("\nDocker CLI not found; skipping image scan.")
+        return 0
+    return run_step(
+        "Container image security scan (trivy)",
+        compose_command("--profile", "ci", "run", "--rm", "trivy"),
+    )
 
 
 def main_for_tests(argv: list[str] | None = None) -> int:
@@ -112,6 +133,7 @@ def main_for_tests(argv: list[str] | None = None) -> int:
             args.mypy,
             args.security,
             args.deps_audit,
+            args.image_scan,
             args.tests,
             args.privacy,
             args.compose,
@@ -130,6 +152,11 @@ def main_for_tests(argv: list[str] | None = None) -> int:
 
     if run_all or args.deps_audit:
         exit_code = run_deps_audit()
+        if exit_code != 0:
+            return exit_code
+
+    if run_all or args.image_scan:
+        exit_code = run_image_scan()
         if exit_code != 0:
             return exit_code
 
