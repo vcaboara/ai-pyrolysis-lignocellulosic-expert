@@ -55,10 +55,8 @@ def ensure_container_running() -> None:
     if not status.stdout.strip():
         raise RuntimeError(
             "Ollama container is not running. Start it with: "
-            "$env:COMPOSE_FILE='docker/docker-compose.yml'; "
-            "docker compose up -d ollama"
+            "docker compose -f docker/docker-compose.yml up -d ollama"
         )
-
 
 def action_up(args: list[str]) -> int:
     return cmd_compose(["up", "-d", *args])
