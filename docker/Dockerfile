@@ -82,13 +82,11 @@ FROM minimum AS runtime
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-ARG PY_VERSION=3.15
-
 WORKDIR /workspace
 RUN addgroup -S app && adduser -S -G app app
 
 # Copy ONLY runtime packages (not dev tools like black, ruff, bandit, mypy)
-COPY --from=builder /runtime-deps /usr/local/lib/python${PY_VERSION}/site-packages
+COPY --from=builder /runtime-deps /usr/local/lib/python3.15/site-packages
 
 # Copy the entire workspace from builder (all source code already there)
 COPY --from=builder /workspace /workspace

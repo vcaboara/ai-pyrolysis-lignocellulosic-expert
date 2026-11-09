@@ -6,26 +6,33 @@ This project implements a comprehensive DevSecOps pipeline to automatically dete
 dependencies, and container images. This document describes our security approach, findings, and remediation
 strategy.
 
-## Base Image: python:3.13-alpine (Selected: Option 1)
+## Base Image: python:3.15-alpine (Selected: Option 1)
 
 ### Decision Rationale
 
-We use `python:3.13-alpine` as our base image. This decision prioritizes:
+We use `python:3.15-alpine` as our base image. This decision prioritizes:
 
 1. **Reduced attack surface**: Smaller base image and fewer OS packages by default
 2. **Security-first defaults**: Lower baseline vulnerability exposure for local CI/runtime images
-3. **Pragmatism**: Works for this project while still allowing reproducible security scanning in CI
+3. **Supportability**: `Python 3.15` is a newer actively maintained release and avoids staying on an older
+   runtime line that was called out in security review feedback
+4. **Pragmatism**: Works for this project while still allowing reproducible security scanning in CI
+
+A GitHub Copilot security review specifically flagged the project’s older Python baseline as a stale
+runtime choice and recommended moving to a newer supported Python version. We therefore upgraded from
+`python:3.13-alpine` to `python:3.15-alpine` to align with the current security guidance and minimize the
+risk of avoidable patch drift in the CI/runtime environment.
 
 ### Alternative Options Considered
 
 - **1 - Alpine (SELECTED)**
-- Image: `python:3.13-alpine`; size: ~180MB; vulnerabilities: lower baseline; trade-off: musl differences
+- Image: `python:3.15-alpine`; size: ~180MB; vulnerabilities: lower baseline; trade-off: musl differences
    vs glibc.
 - **2 - Distroless**
 - Image: `gcr.io/distroless/python3-debian12`; size: ~150MB; vulnerabilities: minimal; trade-off: no shell,
    harder to debug.
 - **3 - Slim**
-- Image: `python:3.13-slim`; size: ~400MB; vulnerabilities: higher baseline; trade-off: familiar Debian
+- Image: `python:3.15-slim`; size: ~400MB; vulnerabilities: higher baseline; trade-off: familiar Debian
    ecosystem, larger footprint.
 - **4 - Custom Minimal**
 - Image: custom hardened image; size: variable; vulnerabilities: variable; trade-off: time-intensive,
@@ -37,7 +44,7 @@ We use `python:3.13-alpine` as our base image. This decision prioritizes:
 
 **Scan Date**: Rolling (per CI/local run)
 **Tool**: Trivy v0.76.2 (or newer)
-**Scope**: `ai-pyrolysis-ligno:runtime` image built from `python:3.13-alpine`
+**Scope**: `ai-pyrolysis-ligno:runtime` image built from `python:3.15-alpine`
 
 Vulnerability counts vary over time as upstream Alpine and package feeds change.
 Do not treat a static number in this document as authoritative; use the latest Trivy output from the current run.
@@ -88,7 +95,7 @@ continuous scanning because:
 
 ### 3. Upgrade Strategy
 
-- Track `python:3.13-alpine` upstream updates and rebuild regularly
+- Track `python:3.15-alpine` upstream updates and rebuild regularly
 - Subscribe to Alpine security advisories and Trivy database updates
 - Rebuild image monthly or on critical CVE announcements
 - Re-evaluate Distroless or further hardening if vulnerability trend worsens
