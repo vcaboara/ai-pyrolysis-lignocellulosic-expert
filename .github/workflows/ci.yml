@@ -29,7 +29,7 @@ jobs:
           echo "- Head ref: ${{ github.head_ref || 'n/a' }}" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Build CI container image, run tests + security + deps-audit + style + typing (compose)
         run: |

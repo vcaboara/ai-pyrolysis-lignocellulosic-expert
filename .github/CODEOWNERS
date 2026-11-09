@@ -1,0 +1,14 @@
+# Default owner for the repository
+* @vcaboara
+
+# Documentation and repo-level guidance
+/README.md @vcaboara
+/SECURITY.md @vcaboara
+/AGENTS.md @vcaboara
+
+# CI and automation
+/.github/ @vcaboara
+/.github/workflows/ @vcaboara
+
+# Docker and compose config
+/docker/ @vcaboara
