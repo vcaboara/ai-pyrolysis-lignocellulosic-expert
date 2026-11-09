@@ -2,9 +2,9 @@
 * @vcaboara
 
 # Documentation and repo-level guidance
-README.md @vcaboara
-SECURITY.md @vcaboara
-AGENTS.md @vcaboara
+/README.md @vcaboara
+/SECURITY.md @vcaboara
+/AGENTS.md @vcaboara
 
 # CI and automation
 .github/ @vcaboara
