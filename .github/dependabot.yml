@@ -21,6 +21,26 @@ updates:
               patterns:
                   - "*"
 
+    - package-ecosystem: "pip"
+      directory: "/pyrolysis_lignocellulosic_ai_training"
+      target-branch: "main"
+      schedule:
+          interval: "weekly"
+          day: "monday"
+          time: "06:15"
+          timezone: "UTC"
+      commit-message:
+          prefix: "chore(deps)"
+      labels:
+          - "dependencies"
+          - "security"
+      rebase-strategy: "disabled"
+      open-pull-requests-limit: 5
+      groups:
+          python-training-deps:
+              patterns:
+                  - "*"
+
     - package-ecosystem: "github-actions"
       directory: "/"
       target-branch: "main"
