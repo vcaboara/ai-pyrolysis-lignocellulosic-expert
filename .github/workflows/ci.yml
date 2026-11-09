@@ -31,11 +31,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build CI container image
+      - name: Build CI container image, run tests + security + style + typing (compose)
         run: |
           docker compose --profile ci build ci
 
-      - name: Run tests + security + privacy + style + typing (compose)
+      - name: Run privacy check (compose)
         run: |
           docker compose --profile ci up --abort-on-container-exit --exit-code-from ci --no-build ci
 
