@@ -2,7 +2,7 @@
 # STAGE 1: Builder (python:3.13-alpine)
 # Purpose: Full CI environment - compile deps, run all tests/checks
 # ============================================================================
-FROM python:3.13-alpine AS minimum
+FROM python:3.15-alpine AS minimum
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
