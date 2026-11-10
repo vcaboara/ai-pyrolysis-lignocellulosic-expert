@@ -1,11 +1,13 @@
 # ============================================================================
-# STAGE 1: Builder (python:3.13-alpine)
-# Purpose: Full CI environment - compile deps, run all tests/checks
+# STAGE 1: Minimum (python:3.15-alpine)
+# Purpose: Minimal environment - base for other stages, contains only
+# essential OS and pip packages
 # ============================================================================
 FROM python:3.15-alpine AS minimum
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    PIP_ROOT_USER_ACTION=ignore
 
 WORKDIR /workspace
 
@@ -18,6 +20,10 @@ RUN apk add --no-cache \
     libgfortran && \
     python -m pip install --upgrade pip
 
+# ============================================================================
+# STAGE 2: Builder (minimum)
+# Purpose: Full CI environment - compile deps, run all tests/checks
+# ============================================================================
 FROM minimum AS builder
 # Install build dependencies
 # For scikit-learn with Meson build: use build-base (includes gcc, g++, make, libc-dev)
@@ -42,10 +48,11 @@ RUN echo "=== Compiler Verification ===" && \
 COPY pyrolysis_lignocellulosic_ai_training/requirements.txt requirements-dev.txt ./
 
 # Install runtime dependencies to /runtime-deps
-RUN mkdir -p /runtime-deps /dev-deps && \
-    python -m pip install --target /runtime-deps -r requirements.txt && \
-    python -m pip install --target /dev-deps -r requirements-dev.txt && \
-    printf '/runtime-deps\n/dev-deps\n' > /usr/local/lib/python3.13/site-packages/local-deps.pth
+RUN SITE_PACKAGES="$(python -c 'import site; print(site.getsitepackages()[0])')" && \
+    mkdir -p /runtime-deps /dev-deps "$SITE_PACKAGES" && \
+    python -m pip install --root-user-action ignore --target /runtime-deps -r requirements.txt && \
+    python -m pip install --root-user-action ignore --target /dev-deps -r requirements-dev.txt && \
+    printf '/runtime-deps\n/dev-deps\n' > "$SITE_PACKAGES/local-deps.pth"
 
 # Copy only repo paths needed by the local CI gates
 # Files
@@ -66,7 +73,7 @@ RUN python run_local_ci.py --tests --security --deps-audit --format --lint --myp
 CMD ["python", "run_local_ci.py", "--privacy"]
 
 # ============================================================================
-# STAGE 2: Runtime (python:3.13-alpine)
+# STAGE 3: Runtime (minimum)
 # Purpose: Minimal image with only requirements.txt (no dev tools)
 # Alpine base gives ~50% smaller image and fewer OS-level vulnerabilities
 # ============================================================================
@@ -76,12 +83,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 WORKDIR /workspace
+RUN addgroup -S app && adduser -S -G app app
 
 # Copy ONLY runtime packages (not dev tools like black, ruff, bandit, mypy)
-COPY --from=builder /runtime-deps /usr/local/lib/python3.13/site-packages
+COPY --from=builder /runtime-deps /usr/local/lib/python3.15/site-packages
 
 # Copy the entire workspace from builder (all source code already there)
 COPY --from=builder /workspace /workspace
 
+# Switch to non-root user for runtime
+USER app
 # Runtime CMD (minimal - just runs the app)
 CMD ["python", "run_local_ci.py"]
