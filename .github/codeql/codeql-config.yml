@@ -1,0 +1,12 @@
+name: "Project CodeQL config"
+
+paths:
+  - pyrolysis_lignocellulosic_ai_training
+  - scripts
+  - tests
+  - utils
+paths-ignore:
+  - "venv/**"
+  - ".git/**"
+  - "results/**"
+  - "**/__pycache__/**"
