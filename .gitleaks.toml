@@ -11,5 +11,4 @@ paths = [
     '''^\.git/''',
     '''^\.local_private/''',
     '''^\.env\.example$''',
-    '''^\.env$''',
 ]
