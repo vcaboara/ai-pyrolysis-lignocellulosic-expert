@@ -49,6 +49,7 @@ COPY pyrolysis_lignocellulosic_ai_training/requirements.txt requirements-dev.txt
 RUN SITE_PACKAGES="$(python -c 'import site; print(site.getsitepackages()[0])')" && \
     mkdir -p /runtime-deps /dev-deps "$SITE_PACKAGES" && \
     python -m pip install --root-user-action ignore --target /runtime-deps -r requirements.txt && \
+    python -m pip install --root-user-action ignore --target /runtime-deps "setuptools>=78.1.1" && \
     python -m pip install --root-user-action ignore --target /dev-deps -r requirements-dev.txt && \
     printf '/runtime-deps\n/dev-deps\n' > "$SITE_PACKAGES/local-deps.pth"
 
