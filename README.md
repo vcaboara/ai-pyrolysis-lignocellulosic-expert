@@ -35,6 +35,10 @@ This workflow also emits the active ref and event context in the GitHub Actions 
     - [Run the same quality gate in a container](#run-the-same-quality-gate-in-a-container)
     - [Run only selected checks](#run-only-selected-checks)
     - [What the CI wrapper checks](#what-the-ci-wrapper-checks)
+  - [Local security tooling](#local-security-tooling)
+    - [CodeQL](#codeql)
+    - [Gitleaks](#gitleaks)
+    - [SBOM generation](#sbom-generation)
   - [Running the test suite directly](#running-the-test-suite-directly)
   - [Privacy and repo hygiene](#privacy-and-repo-hygiene)
   - [Project structure](#project-structure)
@@ -187,6 +191,49 @@ These options are useful when you want to focus on a single gate during developm
 - Ruff linting
 - Mypy static analysis
 - Docker Compose validation
+
+## Local security tooling
+
+The repository includes GitHub Actions workflows for static analysis and security scanning. You can run the same checks locally before pushing.
+
+### CodeQL
+
+CodeQL is configured in `.github/workflows/codeql.yml` and `.github/codeql/codeql-config.yml`.
+
+Install the CodeQL CLI and run a local analysis from the repository root:
+
+```powershell
+codeql database create codeql-db --language=python --source-root .
+codeql database analyze codeql-db --format=sarif-latest --output=codeql-results.sarif
+```
+
+This mirrors the repo-managed GitHub scan at a local level and is useful for reproducing a security finding before pushing changes.
+
+### Gitleaks
+
+The repository includes a Gitleaks workflow in `.github/workflows/secrets.yml` and a config file at `.gitleaks.toml`.
+
+Run the same detection locally:
+
+```powershell
+gitleaks detect --config .gitleaks.toml --source . --no-banner --exit-code 1
+```
+
+Use the same command when validating a new secret-scan rule or checking whether a branch is likely to fail the CI gate.
+
+### SBOM generation
+
+The repository includes an SBOM workflow in `.github/workflows/sbom.yml`.
+
+You can generate the same artifacts locally without GitHub Actions using Syft:
+
+```powershell
+docker build -f docker/Dockerfile --target runtime -t ai-pyrolysis-ligno:runtime .
+syft dir:. -o spdx-json=sbom-source.spdx.json
+syft docker:ai-pyrolysis-ligno:runtime -o spdx-json=sbom-runtime.spdx.json
+```
+
+This produces SPDX JSON files for the source tree and the built runtime image, matching the GitHub workflow artifact output.
 
 ## Running the test suite directly
 

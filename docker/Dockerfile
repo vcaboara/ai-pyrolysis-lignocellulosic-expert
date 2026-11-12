@@ -18,7 +18,7 @@ RUN apk add --no-cache \
     openblas \
     libstdc++ \
     libgfortran && \
-    python -m pip install --upgrade pip
+    python -m pip install --no-cache-dir --upgrade "pip" "setuptools>=78.1.1" "wheel"
 
 # ============================================================================
 # STAGE 2: Builder (minimum)
@@ -33,9 +33,7 @@ RUN apk add --no-cache \
     linux-headers \
     python3-dev \
     gfortran \
-    openblas-dev \
-    && \
-    python -m pip install --upgrade setuptools wheel
+    openblas-dev
 
 # Diagnostic: Verify C++ compiler (key for scikit-learn Meson builds)
 RUN echo "=== Compiler Verification ===" && \
@@ -51,6 +49,7 @@ COPY pyrolysis_lignocellulosic_ai_training/requirements.txt requirements-dev.txt
 RUN SITE_PACKAGES="$(python -c 'import site; print(site.getsitepackages()[0])')" && \
     mkdir -p /runtime-deps /dev-deps "$SITE_PACKAGES" && \
     python -m pip install --root-user-action ignore --target /runtime-deps -r requirements.txt && \
+    python -m pip install --root-user-action ignore --target /runtime-deps "setuptools>=78.1.1" && \
     python -m pip install --root-user-action ignore --target /dev-deps -r requirements-dev.txt && \
     printf '/runtime-deps\n/dev-deps\n' > "$SITE_PACKAGES/local-deps.pth"
 
