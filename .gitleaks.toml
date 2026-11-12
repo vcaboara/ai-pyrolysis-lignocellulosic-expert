@@ -1,0 +1,14 @@
+title = "Project secret scan config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Ignore local and generated artifacts that are not production secrets"
+paths = [
+    '''^results/''',
+    '''^venv/''',
+    '''^\.git/''',
+    '''^\.local_private/''',
+    '''^\.env\.example$''',
+]
