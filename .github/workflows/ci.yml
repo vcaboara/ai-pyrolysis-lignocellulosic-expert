@@ -31,13 +31,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Build CI container image, run tests + security + deps-audit + style + typing (compose)
+      - name: Build CI and runtime container image, run tests + security + deps-audit + style + typing (compose)
         run: |
-          docker compose --profile ci build ci
+          docker compose --profile ci build ci runtime
 
       - name: Run privacy check (compose)
         run: |
           docker compose --profile ci up --abort-on-container-exit --exit-code-from ci --no-build ci
+
+      - name: Run Trivy runtime image scan (compose)
+        run: |
+          docker compose --profile ci up --abort-on-container-exit --exit-code-from trivy --no-build trivy
 
       - name: Cleanup compose resources
         if: always()
