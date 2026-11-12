@@ -37,8 +37,8 @@ htmlcov/
 
 # Trivy scan results (run in CI container, not needed in image)
 results/
-trivy-results.txt
-trivy-clean.txt
+*.log
+*.txt
 
 # Documentation and large files
 *.md

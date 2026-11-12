@@ -18,7 +18,7 @@ RUN apk add --no-cache \
     openblas \
     libstdc++ \
     libgfortran && \
-    python -m pip install --upgrade pip
+    python -m pip install --no-cache-dir --upgrade "pip" "setuptools>=78.1.1" "wheel"
 
 # ============================================================================
 # STAGE 2: Builder (minimum)
@@ -33,9 +33,7 @@ RUN apk add --no-cache \
     linux-headers \
     python3-dev \
     gfortran \
-    openblas-dev \
-    && \
-    python -m pip install --upgrade setuptools wheel
+    openblas-dev
 
 # Diagnostic: Verify C++ compiler (key for scikit-learn Meson builds)
 RUN echo "=== Compiler Verification ===" && \
