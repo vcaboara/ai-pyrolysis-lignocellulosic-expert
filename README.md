@@ -146,7 +146,7 @@ $env:COMPOSE_FILE = "docker/docker-compose.yml"
 $env:COMPOSE_PROFILES = "ci"
 docker compose build ci runtime
 docker compose up --abort-on-container-exit --exit-code-from ci --no-build ci
-docker compose up --abort-on-container-exit --exit-code-from trivy --no-build trivy
+docker compose up --abort-on-container-exit --exit-code-from grype --no-build grype
 ```
 
 After the run, clean up the compose-managed containers, network, and local images:
@@ -155,7 +155,7 @@ After the run, clean up the compose-managed containers, network, and local image
 docker compose --profile ci down --rmi local --volumes --remove-orphans
 ```
 
-The `ci` service mounts your working tree into the container so checks that rely on Git metadata (such as `privacy_guard.py`) run against a real repository. The `trivy` service scans the built `ai-pyrolysis-ligno:runtime` image for HIGH and CRITICAL vulnerabilities.
+The `ci` service mounts your working tree into the container so checks that rely on Git metadata (such as `privacy_guard.py`) run against a real repository. The `grype` service scans the built `ai-pyrolysis-ligno:runtime` image for HIGH and CRITICAL vulnerabilities.
 
 ### Run only selected checks
 
@@ -186,7 +186,7 @@ These options are useful when you want to focus on a single gate during developm
 - Unit tests under `tests/`
 - Bandit security scan
 - pip-audit dependency vulnerability scan
-- Trivy container image security scan
+- Grype container image security scan
 - Privacy scan for blocked content and private paths
 - Black formatting
 - Ruff linting

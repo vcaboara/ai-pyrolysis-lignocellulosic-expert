@@ -26,7 +26,7 @@ services:
     # Note: This service builds but doesn't run; used for image scanning below
 
   grype:
-    image: anchore/grype:latest
+    image: anchore/grype:v0.122.0
     command:
       - "ai-pyrolysis-ligno:runtime"
       - "--fail-on=high"
