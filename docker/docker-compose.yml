@@ -32,7 +32,6 @@ services:
       - image
       - --exit-code=1
       - --severity=HIGH,CRITICAL
-      - --progress-spinner=off
       - ai-pyrolysis-ligno:runtime
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro

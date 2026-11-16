@@ -33,3 +33,7 @@ results/
 .env
 **/.env
 tools/
+
+# Output files
+*.log
+*.txt

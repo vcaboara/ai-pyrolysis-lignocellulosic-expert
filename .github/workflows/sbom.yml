@@ -1,0 +1,47 @@
+name: SBOM
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  generate-sbom:
+    name: Generate SBOM artifacts
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build runtime image for SBOM generation
+        run: docker build -f docker/Dockerfile --target runtime -t ai-pyrolysis-ligno:runtime .
+
+      - name: Generate source SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          path: .
+          format: spdx-json
+          output-file: sbom-source.spdx.json
+          artifact-name: sbom-source
+
+      - name: Generate container image SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: ai-pyrolysis-ligno:runtime
+          format: spdx-json
+          output-file: sbom-runtime.spdx.json
+          artifact-name: sbom-runtime
+
+      - name: Upload combined SBOM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-artifacts
+          path: |
+            sbom-source.spdx.json
+            sbom-runtime.spdx.json
+          if-no-files-found: error
