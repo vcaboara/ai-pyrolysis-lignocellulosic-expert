@@ -40,17 +40,16 @@ risk of avoidable patch drift in the CI/runtime environment.
 
 ## Vulnerability Findings
 
-### Trivy Container Image Scan Results
+### Grype Container Image Scan Results
 
 **Scan Date**: Rolling (per CI/local run)
-**Tool**: Trivy v0.76.2 (or newer)
+**Tool**: Grype (`anchore/grype`)
 **Scope**: `ai-pyrolysis-ligno:runtime` image built from `python:3.15-alpine`
 
 Vulnerability counts vary over time as upstream Alpine and package feeds change.
-Do not treat a static number in this document as authoritative; use the latest Trivy output from the current run.
+Do not treat a static number in this document as authoritative; use the latest Grype output from the current run.
 
-If scan artifacts are generated locally, review `results/TRIVY_FINDINGS_SUMMARY.md` (when present)
-for that run's details.
+If scan artifacts are generated locally, review the current Grype output for that run’s details.
 
 ### Python Dependency Vulnerabilities
 
@@ -82,21 +81,21 @@ continuous scanning because:
 
 ### 1. Automated Scanning (CI Integration)
 
-- **On every commit**: Run Trivy container image scan
+- **On every commit**: Run Grype container image scan
 - **On every push**: Validate dependency vulnerabilities via pip-audit
 - **Early warning**: Detect new vulnerabilities in base image automatically
 - **No silent failures**: Exit code 1 if HIGH/CRITICAL vulnerabilities found
 
 ### 2. Monitoring
 
-- Trivy scan results saved to `results/TRIVY_FINDINGS_SUMMARY.md`
+- Grype scan results reviewed in the current CI/local run output
 - Historical tracking of vulnerability counts over time
 - Baseline comparison when upgrading base image
 
 ### 3. Upgrade Strategy
 
 - Track `python:3.15-alpine` upstream updates and rebuild regularly
-- Subscribe to Alpine security advisories and Trivy database updates
+- Subscribe to Alpine security advisories and Grype vulnerability database updates
 - Rebuild image monthly or on critical CVE announcements
 - Re-evaluate Distroless or further hardening if vulnerability trend worsens
 
@@ -115,7 +114,7 @@ If a **critical** CVE (CVSS 9.0+) affects a package in our base image:
 
 1. **Bandit** - Code SAST scanning
 2. **pip-audit** - Python dependency vulnerability scanning
-3. **Trivy** - Container image OS/library scanning
+3. **Grype** - Container image OS/library scanning
 4. **Privacy Guard** - Secrets/PII detection
 5. **Black** - Code formatter (security updates: CVE fixes)
 6. **Ruff** - Linting
@@ -164,7 +163,7 @@ If this project moves to production (e.g., as a service):
 
 ## References
 
-- [Trivy Documentation](https://aquasecurity.github.io/trivy/)
+- [Grype Documentation](https://github.com/anchore/grype)
 - [pip-audit Documentation](https://github.com/pypa/pip-audit)
 - [Bandit Documentation](https://bandit.readthedocs.io/)
 - [OWASP Top 10 Vulnerabilities](https://owasp.org/www-project-top-ten/)

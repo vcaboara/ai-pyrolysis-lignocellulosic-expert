@@ -59,7 +59,7 @@ This workflow also emits the active ref and event context in the GitHub Actions 
 
 ## Prerequisites
 
-- Python 3.13
+- Python 3.15
 - Docker + Docker Compose
 - A local Ollama service running on `http://localhost:11434`
 
@@ -139,22 +139,23 @@ python run_local_ci.py --all
 
 ### Run the same quality gate in a container
 
-Set the compose file once in the shell and then run the CI service normally:
+Set the compose file once in the shell and then run the CI services normally:
 
 ```powershell
 $env:COMPOSE_FILE = "docker/docker-compose.yml"
 $env:COMPOSE_PROFILES = "ci"
-docker compose --profile ci build ci
-docker compose --profile ci up --abort-on-container-exit --exit-code-from ci --no-build ci
+docker compose build ci runtime
+docker compose up --abort-on-container-exit --exit-code-from ci --no-build ci
+docker compose up --abort-on-container-exit --exit-code-from grype --no-build grype
 ```
 
-After the run, clean up the compose-managed container, network, and the local CI image:
+After the run, clean up the compose-managed containers, network, and local images:
 
 ```powershell
 docker compose --profile ci down --rmi local --volumes --remove-orphans
 ```
 
-The `ci` service mounts your working tree into the container so checks that rely on Git metadata (such as `privacy_guard.py`) run against a real repository.
+The `ci` service mounts your working tree into the container so checks that rely on Git metadata (such as `privacy_guard.py`) run against a real repository. The `grype` service scans the built `ai-pyrolysis-ligno:runtime` image for HIGH and CRITICAL vulnerabilities.
 
 ### Run only selected checks
 
@@ -185,7 +186,7 @@ These options are useful when you want to focus on a single gate during developm
 - Unit tests under `tests/`
 - Bandit security scan
 - pip-audit dependency vulnerability scan
-- Trivy container image security scan
+- Grype container image security scan
 - Privacy scan for blocked content and private paths
 - Black formatting
 - Ruff linting

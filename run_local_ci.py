@@ -39,7 +39,7 @@ def add_common_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--mypy", action="store_true", help="Run mypy static analysis")
     parser.add_argument("--security", action="store_true", help="Run Bandit security scan")
     parser.add_argument("--deps-audit", action="store_true", help="Run pip-audit dependency vulnerability scan")
-    parser.add_argument("--image-scan", action="store_true", help="Run Trivy container image security scan")
+    parser.add_argument("--image-scan", action="store_true", help="Run Grype container image security scan")
     parser.add_argument("--tests", action="store_true", help="Run unit tests")
     parser.add_argument("--privacy", action="store_true", help="Run privacy content/path scan")
     parser.add_argument("--compose", action="store_true", help="Validate Docker Compose config")
@@ -80,8 +80,7 @@ def run_deps_audit() -> int:
         "pip_audit",
         "-r",
         "pyrolysis_lignocellulosic_ai_training/requirements.txt",
-        "-r",
-        "requirements-dev.txt",
+        "--no-deps",
         "--progress-spinner",
         "off",
     ]
@@ -118,8 +117,8 @@ def run_image_scan() -> int:
         print("\nDocker CLI not found; skipping image scan.")
         return 0
     return run_step(
-        "Container image security scan (trivy)",
-        compose_command("--profile", "ci", "run", "--rm", "trivy"),
+        "Container image security scan (grype)",
+        compose_command("--profile", "ci", "run", "--rm", "grype"),
     )
 
 

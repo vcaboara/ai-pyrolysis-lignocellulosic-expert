@@ -150,7 +150,7 @@ def main() -> None:
     while True:
         try:
             line = input("rag> ").strip()
-        except (EOFError, KeyboardInterrupt):
+        except EOFError, KeyboardInterrupt:
             print("\nExiting.")
             break
 

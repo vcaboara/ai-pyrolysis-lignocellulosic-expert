@@ -6,7 +6,7 @@ from pathlib import Path
 from urllib.parse import quote
 
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 
 DEFAULT_QUERY_URLS = [
     "https://patents.google.com/?q=(pyrolysis)&oq=pyrolysis",
@@ -165,6 +165,16 @@ def fetch_query_page(session: requests.Session, url: str, timeout: int) -> dict:
     }
 
 
+def get_meta_content(soup: BeautifulSoup, meta_name: str) -> str:
+    """Return a normalized meta-tag content value, or an empty string if missing."""
+    tag = soup.find("meta", attrs={"name": meta_name})
+    if not isinstance(tag, Tag):
+        return ""
+
+    value = tag.attrs.get("content", "")
+    return value.strip() if isinstance(value, str) else ""
+
+
 def fetch_patent_detail(session: requests.Session, patent_code: str, timeout: int) -> dict | None:
     """Fetch the detailed page for a specific patent code from Google Patents.
 
@@ -183,13 +193,8 @@ def fetch_patent_detail(session: requests.Session, patent_code: str, timeout: in
             return None
         soup = BeautifulSoup(resp.text, "lxml")
 
-        title_tag = soup.find("meta", attrs={"name": "DC.title"})
-        title_value = title_tag.get("content") if title_tag else ""
-        title = title_value.strip() if isinstance(title_value, str) else ""
-
-        abstract_tag = soup.find("meta", attrs={"name": "DC.description"})
-        abstract_value = abstract_tag.get("content") if abstract_tag else ""
-        abstract = abstract_value.strip() if isinstance(abstract_value, str) else ""
+        title = get_meta_content(soup, "DC.title")
+        abstract = get_meta_content(soup, "DC.description")
 
         claims_nodes = soup.find_all(["claim-text", "div"], attrs={"num": True})
         claims_text = " ".join(node.get_text(" ", strip=True) for node in claims_nodes[:80])

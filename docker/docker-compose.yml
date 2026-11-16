@@ -25,14 +25,13 @@ services:
       - ci
     # Note: This service builds but doesn't run; used for image scanning below
 
-  trivy:
-    image: ghcr.io/aquasecurity/trivy:0.76.2
-    entrypoint: trivy
+  grype:
+    image: anchore/grype:v0.122.0
     command:
-      - image
-      - --exit-code=1
-      - --severity=HIGH,CRITICAL
-      - ai-pyrolysis-ligno:runtime
+      - "ai-pyrolysis-ligno:runtime"
+      - "--fail-on=high"
+      - "--only-fixed"
+      - "--output=table"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     profiles:

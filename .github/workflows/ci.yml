@@ -39,10 +39,9 @@ jobs:
         run: |
           docker compose --profile ci up --abort-on-container-exit --exit-code-from ci --no-build ci
 
-      # Temporarily disable Trivy in CI so the SBOM branch can stay green while the image scan is deferred.
-      # - name: Run Trivy runtime image scan (compose)
-      #   run: |
-      #     docker compose --profile ci up --abort-on-container-exit --exit-code-from trivy --no-build trivy
+      - name: Run Grype runtime image scan (compose)
+        run: |
+          docker compose --profile ci up --abort-on-container-exit --exit-code-from grype --no-build grype
 
       - name: Cleanup compose resources
         if: always()
