@@ -55,7 +55,7 @@ If scan artifacts are generated locally, review the current Grype output for tha
 
 **Status**: ✅ No known vulnerabilities
 
-Checked via `pip-audit` in the CI pipeline. All direct and transitive dependencies have been evaluated.
+Checked via `pip-audit` in the CI pipeline against the consolidated runtime dependency list in `pyrolysis_lignocellulosic_ai_training/requirements.txt` (CI runs `pip-audit --no-deps`, so this audits the pinned direct dependencies only).
 
 ### Code-Level Vulnerabilities
 

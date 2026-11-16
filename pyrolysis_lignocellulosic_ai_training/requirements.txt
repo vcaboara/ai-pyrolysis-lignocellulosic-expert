@@ -1,2 +1,15 @@
--r requirements-base.txt
--r requirements-sci.txt
+selenium==4.35.0
+webdriver-manager==4.0.2
+pywinauto==0.6.9
+pyautogui==0.9.54
+requests==2.33.0
+beautifulsoup4==4.13.4
+urllib3==2.8.0
+msgpack==1.2.3
+
+numpy==2.5.4
+scipy==1.18.1
+scikit-learn==1.9.1
+joblib==1.5.0
+gast==0.7.0
+pythran==0.19.0
