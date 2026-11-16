@@ -69,9 +69,11 @@ Recommended setup:
 python -m venv venv
 .\venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-pip install scikit-learn joblib requests
-pip install -r requirements-dev.txt
+python -m pip install -r pyrolysis_lignocellulosic_ai_training/requirements.txt
+python -m pip install -r requirements-dev.txt
 ```
+
+The project keeps a single runtime dependency file in `pyrolysis_lignocellulosic_ai_training/requirements.txt`; `requirements-dev.txt` covers the local tooling stack only.
 
 If you want the local model runtime enabled, set the compose file once in the current shell and start the container (or execute other commands):
 

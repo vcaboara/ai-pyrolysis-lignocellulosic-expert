@@ -34,16 +34,12 @@ RUN echo "=== Compiler Verification ===" && \
 RUN SITE_PACKAGES="$(python -c 'import site; print(site.getsitepackages()[0])')" && \
     mkdir -p /runtime-deps /dev-deps "$SITE_PACKAGES"
 
-# Compile and install dependencies from requirement files in layers, smallest first
+# Compile and install dependencies from requirement files in layers
 COPY requirements-dev.txt .
 RUN uv pip install --python /usr/local/bin/python --target /dev-deps -r requirements-dev.txt
 
-COPY pyrolysis_lignocellulosic_ai_training/requirements-base.txt .
-RUN uv pip install --python /usr/local/bin/python --target /runtime-deps -r requirements-base.txt
-
-# Layer for scientific dependencies, slowest and largest
-COPY pyrolysis_lignocellulosic_ai_training/requirements-sci.txt .
-RUN uv pip install --python /usr/local/bin/python --target /runtime-deps -r requirements-sci.txt
+COPY pyrolysis_lignocellulosic_ai_training/requirements.txt .
+RUN uv pip install --python /usr/local/bin/python --target /runtime-deps -r requirements.txt
 
 RUN printf '/runtime-deps\n/dev-deps\n' > "$SITE_PACKAGES/local-deps.pth"
 

@@ -133,7 +133,7 @@ def fetch_query_page(session: requests.Session, url: str, timeout: int) -> dict:
     resp = session.get(url, timeout=timeout)
     resp.raise_for_status()
     html = resp.text
-    soup = BeautifulSoup(html, "lxml")
+    soup = BeautifulSoup(html, "html.parser")
 
     patent_codes = extract_patent_codes(html)
     text = ""
@@ -191,7 +191,7 @@ def fetch_patent_detail(session: requests.Session, patent_code: str, timeout: in
         resp = session.get(detail_url, timeout=timeout)
         if resp.status_code != 200:
             return None
-        soup = BeautifulSoup(resp.text, "lxml")
+        soup = BeautifulSoup(resp.text, "html.parser")
 
         title = get_meta_content(soup, "DC.title")
         abstract = get_meta_content(soup, "DC.description")
