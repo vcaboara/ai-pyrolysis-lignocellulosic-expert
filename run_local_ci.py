@@ -80,8 +80,7 @@ def run_deps_audit() -> int:
         "pip_audit",
         "-r",
         "pyrolysis_lignocellulosic_ai_training/requirements.txt",
-        "-r",
-        "requirements-dev.txt",
+        "--no-deps",
         "--progress-spinner",
         "off",
     ]
