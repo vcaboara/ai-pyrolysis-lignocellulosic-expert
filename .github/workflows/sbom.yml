@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Build runtime image for SBOM generation
         run: docker build -f docker/Dockerfile --target runtime -t ai-pyrolysis-ligno:runtime .
